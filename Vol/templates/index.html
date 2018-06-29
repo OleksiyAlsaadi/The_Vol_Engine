@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% static "channels/js/websocketbridge.js" %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+<div class="top-bar">
+  <div class="top-bar-left">
+    <ul class="dropdown menu" data-dropdown-menu>
+      <li class="menu-text"> Vol </li>
+    </ul>
+  </div>
+
+  <div class="top-bar-left">
+    <form>
+      
+      <input type="submit" class="button" id="clear" value="Apply">
+    </form>
+  </div>
+
+  <div class="top-bar-left">
+    <a href="/Vol"> Vol </a>
+    <br>
+    <a href="/"> Index </a>
+
+    <input id="clickMe" type="button" value="Toggle Post-Effects" onclick="doFunction();" />
+    
+  </div>
+
+</div>
+
+
+{% endblock %}
+
+
+
+
+
+{% block scripts %}
+
+
+<div>
+
+<div class="row">
+  
+  <center>
+  <body onload="loadModels()">
+  
+    <div id="mainCanvas">
+      <canvas id="webgl" width="600" height="600" tabindex="1">
+        Please use a browser that supports "canvas"
+      </canvas>
+    </div>
+
+    <script src="{% static "lib/webgl-utils.js" %}"></script>
+    <script src="{% static "lib/webgl-debug.js" %}"></script>
+    <script src="{% static "lib/cuon-utils.js" %}"></script>
+    <script src="{% static "lib/cuon-matrix.js" %}"></script>
+
+    <script src="{% static "program/initObjects.js" %}"></script>
+    <script src="{% static "program/lightClass.js" %}"></script>
+    <script src="{% static "program/main.js" %}"></script>
+    <script src="{% static "program/loadObject.js" %}"></script>
+
+  </body>
+  
+  <div id="postEffects">
+    <canvas id="post" width="600" height="600" tabindex="1">
+      2D Context Copy
+    </canvas>
+  </div>
+  </center>
+
+</div>
+
+
+
+
+{% endblock %}

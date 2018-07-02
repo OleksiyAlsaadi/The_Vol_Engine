@@ -50,7 +50,11 @@ def ws_message(message):
         "text": json.dumps({
             "mx": data['x'],
             "my": data['y'],
+            "mz": data['z'],
             "id": data['id'],
+            "dx": data['dx'],
+            "dy": data['dy'],
+            "dz": data['dz'],
             "board": board,
         }),
     })

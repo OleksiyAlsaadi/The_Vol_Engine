@@ -301,7 +301,7 @@ function main() {
 
 	// Initialize shaders
 	var texProgram = createProgram(gl, TEXTURE_VSHADER_SOURCE, TEXTURE_FSHADER_SOURCE);
-	var lightProgram = createProgram(gl, TEXTURE_VSHADER_SOURCE, LIGHT_FSHADER_SOURCE);
+	//var lightProgram = createProgram(gl, TEXTURE_VSHADER_SOURCE, LIGHT_FSHADER_SOURCE);
 	gl.useProgram(texProgram);
 
 	// Get storage locations of attribute and uniform variables in program object for texture drawing
@@ -533,6 +533,10 @@ function main() {
 	
 	var tick = function() {
 		m.angle = animate(m.angle, m, tile, height);
+		if (updateBackend == 2){
+			updateBackend = 0;
+			socket.onopen();
+		}
 
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear color and depth buffers
@@ -763,6 +767,37 @@ function main() {
 		drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
 		}
 
+		//Enemy Objects
+		if (true){
+		gl.uniform1i(texProgram.u_Reflect, 2);
+		
+		for (var n = 0; n < Object.keys(id_s).length; n++){
+			key = Object.keys(id_s)[n];
+			ps_x[key] += delta_x[key];
+			ps_y[key] += delta_y[key];
+			ps_z[key] += delta_z[key];
+			//console.log(ps_z[key]);
+			var xx = ps_x[key];
+			var yy = ps_y[key];
+			var zz = ps_z[key];
+			//console.log(ps_z[key]);
+			//console.log(x + " " +y+" "+z);
+
+			var transformations = {};
+			var translation = [xx, yy-2, zz];
+			var scale = [.4, .4, .4];
+			var rotation =  [m.angle*.2,0.0,1.0,0.0];
+
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
+
+			drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+		}
+
+		gl.uniform1i(texProgram.u_Reflect, 0);
+		}
+
 		//Skybox
 		if (true){
 		var transformations = {};
@@ -816,33 +851,60 @@ function doFunction(){
 //Sockets
 socket = new WebSocket("ws://" + window.location.host + "/");
 var my_id = Math.floor(Math.random() * (99))+1;
+var my_id_str = String(my_id);
 var ps_x = {};
 var ps_y = {};
+var ps_z = {};
 var id_s = {};
+var delta_x = {};
+var delta_y = {};
+var delta_z = {};
+delta_x[my_id_str] = 0.0;
+delta_y[my_id_str] = 0.0;
+delta_z[my_id_str] = 0.0;
+var dx = 0.0;
+var dy = 0.0;
+var dz = 0.0;
 var tile = new Array(25);
 var height = new Array(25);
 
 socket.onopen = function() {
 
+  console.log(dz);
+
   var data = {
     "id": my_id,
     "x": m.px, 
     "y": m.py, 
+    "z": m.pz,
+    "dx": dx,
+    "dy": dy,
+    "dz": dz,
   }
 
   socket.send(JSON.stringify(data));
 }
+
 socket.onmessage = function(e) {
 
   var data = JSON.parse(e.data);
   var id_new = encodeURI(data['id']);
   var mx = encodeURI(data['mx']);
   var my = encodeURI(data['my']);
+  var mz = encodeURI(data['mz']);
+  var mdx = encodeURI(data['dx']);
+  var mdy = encodeURI(data['dy']);
+  var mdz = encodeURI(data['dz']);
 
   id_str = String(id_new);
   id_s[id_str] = id_new;
   ps_x[id_str] = mx;
   ps_y[id_str] = my;
+  ps_z[id_str] = mz;
+  delta_x[id_str] = mdx;
+  delta_y[id_str] = mdy;
+  delta_z[id_str] = mdz;
+  console.log(delta_z[id_str]);
 
   var board_temp = encodeURI(data['board']);
   var r = decodeURI(board_temp);
@@ -850,9 +912,8 @@ socket.onmessage = function(e) {
 
   for(n = 0; n < s.length; n++){ //Save Board
       tile[n] = s[n];
-      height[n] = 0;
+      //height[n] = 0;
   }
-
 
 }
 if (socket.readyState == WebSocket.OPEN) socket.onopen();
@@ -1333,6 +1394,7 @@ var oldlz = 0.0;
 var preventx = false;
 var preventz = false;
 var onFloor = true;
+var updateBackend = 0;
 
 var g_last = Date.now();
 function animate(angle, m, tile, height){
@@ -1362,13 +1424,21 @@ function animate(angle, m, tile, height){
 	m.ly -= m.jump;
 
 	var e = elapsed/10*speed;
+
+	dx = 0.0;
+	dy = 0.0;
+	dz = 0.0;
   
     if (m.moveup >= 1){
         //if (preventx == false){ m.px = m.px + Math.cos(m.turn*3.14/180)*speed; }
         //if (preventz == false){ m.pz = m.pz + Math.sin(m.turn*3.14/180)*speed; }
-		m.px = m.px + Math.cos(m.turn*3.14/180)*e;
-		m.pz = m.pz + Math.sin(m.turn*3.14/180)*e;
+        var ddx = Math.cos(m.turn*3.14/180)*e;
+        var ddz = Math.sin(m.turn*3.14/180)*e;
+		m.px = m.px + ddx;
+		m.pz = m.pz + ddz;
         look = 1;
+        dx += ddx; 
+        dz += ddz; 
         //m.moveup-=1;
     }
     if (m.movedown >= 1){
@@ -1411,7 +1481,7 @@ function animate(angle, m, tile, height){
 				var d = 8; //Distance of tiles
 				var o = 4; //Offset (so position is top left of tiles, not middle)
 				
-				//X and Z coordinates                                              
+				//X and Z coordinates
 				if (m.px >= n*d-o-1 && m.px <= n*d+d-o+1 && m.pz >= k*d-o-1 && m.pz <= k*d+d-o+1){
 					
 					//Y coords (height)
@@ -1456,13 +1526,14 @@ function animate(angle, m, tile, height){
 	if (falling == true){ //Player is falling
 		m.jump += .01;
 		if (m.py < -30){
-			m.py += 30;
-			m.ly += 30;
+			m.py += 60;
+			m.ly += 60;
 		}
 	}
 	
 	m.turn += x/5;
     //m.ly += y/10;
+   	//Update looking direction
     if (x != 0 || y != 0 || look == 1){
         m.lx = m.px + Math.cos(m.turn*3.14/180);
         m.lz = m.pz + Math.sin(m.turn*3.14/180);
@@ -1472,13 +1543,22 @@ function animate(angle, m, tile, height){
     x = 0;
     y = 0;
 
+    if (updateBackend == 1){
+		updateBackend = 2;
+	}
+
     return newAngle % (360*2);
 }
 
 
 
 function checkKey(e, m, type) {
-    console.log(e.keyCode);
+    //console.log(e.keyCode);
+    if (type == 5){
+    	updateBackend = 1;
+    	console.log("test");
+    }
+
     e = e || window.event;
     if (e.keyCode == '67' && type == 5){ //c key
       m.clight = 1;
@@ -1502,7 +1582,7 @@ function checkKey(e, m, type) {
     if (e.keyCode == '32' && type == 5) { //space
       if (onFloor == true){
         m.jump -= .4;
-  	  }
+   	  }
     }
 	
 	if (e.keyCode == '70' && type == 0){

@@ -11,21 +11,42 @@ from .models import *
 
 
 
-
 # Randomize Tiles
 board = [];
-for n in range(25):
-	x = randint(0, 3)
-	if (x == 2):
-		y = randint(0, 1)
-		if (y == 0):
-			x = 1
+height = [];
+redo = 0
 
-	if (n == 0):
-		x = 1
-	if (n == 1):
-		x = 3
-	board.append( x )
+def redoLevel():
+	global board
+	global height
+	board = [];
+	height = [];
+
+	for n in range(25):
+		x = randint(0, 3)
+		if (x == 2):
+			y = randint(0, 1)
+			if (y == 0):
+				x = 1
+
+		if (n == 0):
+			x = 1
+		if (n == 1):
+			x = 3
+		board.append( x )
+
+		h = randint(0,2)-1
+		#height.append( h*8 )
+		height.append(0);
+
+def changeHeight():
+	global height
+	height = [];
+	for n in range(25):
+		h = randint(0,2)-1
+		height.append( h*8 )
+
+redoLevel();
 
 # Connected to websocket.connect
 @channel_session
@@ -44,6 +65,16 @@ def ws_connect(message):
 # Connected to websocket.receive
 @channel_session
 def ws_message(message):
+	global redo
+
+	if (redo == 20):
+		redo = 0
+		changeHeight();
+
+	redo += 1;
+	print(redo)
+
+
 	data = json.loads(message['text'])
 
 	Group("game-%s" % message.channel_session['room']).send({
@@ -52,10 +83,13 @@ def ws_message(message):
             "my": data['y'],
             "mz": data['z'],
             "id": data['id'],
-            "dx": data['dx'],
-            "dy": data['dy'],
-            "dz": data['dz'],
             "board": board,
+            "height": height,
+            "still": data['still'],
+            "rl": data['rl'],
+            "r_x": data['r_x'],
+            "r_y": data['r_y'],
+            "r_z": data['r_z'],
         }),
     })
 	return

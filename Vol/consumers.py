@@ -22,7 +22,7 @@ def redoLevel():
 	board = [];
 	height = [];
 
-	for n in range(25):
+	for n in range(49):
 		x = randint(0, 3)
 		if (x == 2):
 			y = randint(0, 1)
@@ -42,9 +42,14 @@ def redoLevel():
 def changeHeight():
 	global height
 	height = [];
-	for n in range(25):
+	flat = randint(0,1);
+	for n in range(49):
 		h = randint(0,2)-1
-		height.append( h*8 )
+		
+		if (flat == 0):
+			height.append( h*8 )
+		else:
+			height.append( 0 )
 
 redoLevel();
 
@@ -67,7 +72,7 @@ def ws_connect(message):
 def ws_message(message):
 	global redo
 
-	if (redo == 20):
+	if (redo == 50):
 		redo = 0
 		changeHeight();
 
@@ -76,6 +81,7 @@ def ws_message(message):
 
 
 	data = json.loads(message['text'])
+	
 
 	Group("game-%s" % message.channel_session['room']).send({
         "text": json.dumps({
@@ -90,6 +96,7 @@ def ws_message(message):
             "r_x": data['r_x'],
             "r_y": data['r_y'],
             "r_z": data['r_z'],
+            "killed": data['killed'],
         }),
     })
 	return

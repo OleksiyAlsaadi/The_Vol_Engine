@@ -31,12 +31,12 @@ function updatePosition(e){
 //      Movement and animation variables  //
 ////////////////////////////////////////////
 m = new Object();
-m.px = 0; //Player x,y,z
-m.pz = 5;
-m.py = 20;
+m.px = Math.random() * 32; //Player x,y,z
+m.pz = Math.random() * 32;
+m.py = 25;
 m.lx = 0; //Look x,y,z
 m.lz = 0;
-m.ly = 20;
+m.ly = 25;
 m.turn = -90;
 m.jump = 0.0;
 m.dir = 0;
@@ -50,8 +50,8 @@ m.day = 1;
 //    Light Objects hold Position and Color        //
 /////////////////////////////////////////////////////
 class LightObject {
-              //Position/ID   //Color   //Intensity //Delta
-    constructor(x, y, z, id,   r, g, b,   i,         dx,dy,dz) {
+              //Position/ID   //Color   //Intensity //Delta     //Lifetime //who sho tit
+    constructor(x, y, z, id,   r, g, b,   i,         dx,dy,dz,  time,      pl) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -64,6 +64,8 @@ class LightObject {
         this.dx = dx;
         this.dy = dy;
         this.dz = dz;
+        this.time = time;
+        this.player = pl;
     }
 
     get_ID() {
@@ -72,6 +74,10 @@ class LightObject {
 	
 	  get_Intensity() {
         return this.i;
+    }
+
+    set_Intensity(i) {
+        this.i = i;
     }
 
     get_Delta(){
@@ -94,37 +100,17 @@ class LightObject {
         var color = [this.r, this.g, this.b];
         return color;
     }
+
+    get_Time(){
+      return this.time;
+    }
+
+    set_Time(time){
+       this.time = time;
+    }
+
+    get_Player(){
+        return this.player;
+    }
 }
 
-
-//////////////////////////////
-//    Rocket Objects        //
-//////////////////////////////
-class RocketObject {
-  constructor(x, y, z, id, time){
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    this.id = id;
-    this.time = time;
-  }
-
-  get_Pos() {
-    var pos = [this.x, this.y, this.z];
-    return pos;
-  }
-
-  set_Pos(x, y, z){
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-
-  get_Time(){
-    return this.time;
-  }
-
-  set_Time(time){
-    this.time = time;
-  }
-}

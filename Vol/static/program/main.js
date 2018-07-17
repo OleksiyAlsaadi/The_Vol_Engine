@@ -225,10 +225,24 @@ var TEXTURE_FSHADER_SOURCE =
   }`
   
 
+
   
+  
+
+var g_modelMatrix = new Matrix4();
+var g_viewMatrix = new Matrix4();
+var g_projMatrix = new Matrix4();
+var normalMatrix = new Matrix4();
+
+
+
+
+
+
+  /*
   
 var LIGHT_FSHADER_SOURCE =
-  `
+  
   //Texture
   uniform sampler2D u_Sampler;
   uniform sampler2D normalMap;
@@ -250,26 +264,19 @@ var LIGHT_FSHADER_SOURCE =
 		
 	gl_FragColor = BrightColor;
 
-  }`
-  
-  
-
-var g_modelMatrix = new Matrix4();
-var g_viewMatrix = new Matrix4();
-var g_projMatrix = new Matrix4();
-var normalMatrix = new Matrix4();
+  } */
 
 
 
 
-
-
-
-
-
-
-
-
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}
 
 
 //Game //////////////////////////////////////////////////////////////
@@ -280,6 +287,7 @@ var show = 1;
 
 function main() {
 	// Retrieve <canvas> element
+	
 	var canvas = document.getElementById('webgl');
 	var post_canvas = document.getElementById('post');
 
@@ -287,7 +295,7 @@ function main() {
 	canvas.height = window.innerHeight
 		|| document.documentElement.clientHeight
 		|| document.body.clientHeight;
-	canvas.height *= .85;
+	canvas.height *= .90;
 	canvas.width = canvas.height;
 	post_canvas.height = canvas.height;
 	post_canvas.width = canvas.width;
@@ -398,6 +406,7 @@ function main() {
 		return;
 	}
 	
+	//Load Images
 	var solidGray = initTextures(gl, texProgram, './static/program/Textures/SolidGray_BaseColor.png', 0);
 	var solidGrayNormal = initTextures(gl, texProgram, './static/program/Textures/SolidGray_Normal.png', 1);
 
@@ -421,6 +430,8 @@ function main() {
 	
 	var skyTex  = initTextures(gl, texProgram, './static/program/Textures/Sky/skybox_texture.jpg', 0);
 	var skyTex2 = initTextures(gl, texProgram, './static/program/Textures/Sky/skybox_texture2.jpg', 0);
+
+	var old_trinity = initTextures(gl, texProgram, './static/program/Textures/Misc/old_trinity.jpg', 0);
 	skyBox = initCube(gl, myCube);
 	land = initPlane(gl, myTorus);
 	
@@ -435,6 +446,8 @@ function main() {
         console.log('Failed to create the image object');
         return null;
     }
+
+    sleep(2000);
 	
 	
 
@@ -504,12 +517,12 @@ function main() {
 	
 	//Overhead light with random color
 	var r = Math.random() * .3; var g = Math.random() * .3; var b = Math.random() * .3;
-	var k = createLight(20, 4, 20.0,     0.5+r, 0.5+g, 0.5+b,   20.0,   0,0,0); 
-	//var k = createLight(20,20,20,    .3, .3, .8,       30.0); 
-	
-	
+	//var k = createLight(20, 4, 20.0,     0.5+r, 0.5+g, 0.5+b,   20.0,   0,0,0,   0.0,  0);
+	var k = createLight(20, 4, 20.0,     0.6, 0.6, 0.6,   20.0,   0,0,0,  0.0,  0);  
+	//var k = createLight(20,20,20,    .3, .3, .8,       30.0,    0.0,    0); 
+
 	//Structures
-	if (true){
+	if (false){
 	var numStruc = 5;
 	var struc_t = [];
 	var struc_x = [];
@@ -533,6 +546,8 @@ function main() {
 	
 	
 	var tick = function() {
+		//console.log("test3");
+
 		m.angle = animate(m.angle, m, tile, height);
 		if (updateBackend == 2){
 			updateBackend = 0;
@@ -555,9 +570,53 @@ function main() {
 		projMatrix.setLookAt(m.px, m.py, m.pz ,   m.lx, m.ly, m.lz, 0.0, 1.0, 0.0);
 
 
-
+		
 		//Lights
 		drawLights(gl, texProgram);
+
+		//Rocket Objects 
+		if (true){
+		for (var n = 0; n < numLights; n++){
+
+			var pos = lightVector[n].get_Pos();
+			var transformations = {};
+			var translation = [pos[0], pos[1]+0.2, pos[2]];
+			var scale = [0.1, 0.1, 0.1];
+			var rotation =  [0.0,0.0,1.0,0.0];
+
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
+
+			if (n > 0){
+				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+			}
+
+			//If hit an Enemy/ Enemy Collide
+			for (var nj = 0; nj < Object.keys(id_s).length; nj++){
+				key = Object.keys(id_s)[nj];
+				//console.log(lightVector[n].get_Player());
+				//console.log(my_id);
+				if (lightVector[n].get_Player() != id_s[key]){
+
+					var xx = parseFloat(ps_x[key]);
+					var yy = parseFloat(ps_y[key]);
+					var zz = parseFloat(ps_z[key]);
+
+					hs = 2.0; //hitsize/hitbox
+
+					if (pos[0] > xx-hs && pos[0] < xx+hs &&
+						pos[1] > yy-hs && pos[1] < yy+hs &&
+						pos[2] > zz-hs && pos[2] < zz+hs){
+
+						killed = id_s[key];
+						updateBackend = 1;
+					}
+				}
+			}
+
+		}
+		}
 	
 		//Floor Tiles
 		if (true){
@@ -565,8 +624,8 @@ function main() {
 		gl.uniform1i(texProgram.u_Reflect, 3);
 		
 		var c = 0;
-		for (var n = 0; n < 5; n++){
-			for (var k = 0; k < 5; k++){
+		for (var n = 0; n < 7; n++){
+			for (var k = 0; k < 7; k++){
 
 				var downSpeed = .05;
 			
@@ -670,7 +729,7 @@ function main() {
 		}
 
 		//Brick Cube
-		if (true){
+		if (false){
 		var transformations = {};
 		var translation = [0.0, -1.0, 0.0];
 		var scale = [1.1, 2.2, 1.1];
@@ -707,7 +766,7 @@ function main() {
 		}
 
 		//Sphere for Light
-		if (true){
+		if (false){
 		var transformations = {};
 		var translation = [ -0.4, 0.0, 2.0];
 		var scale = [0.05, 0.05, 0.05];
@@ -721,7 +780,7 @@ function main() {
 		}
 
 		//Sphere for Light
-		if (true){
+		if (false){
 		var transformations = {};
 		var translation = [0.4, 0.5, -2.3];
 		var scale = [0.05, 0.05, 0.05];
@@ -735,7 +794,7 @@ function main() {
 		}
 
 		//Sphere Big
-		if (true){
+		if (false){
 		gl.uniform1i(texProgram.u_Reflect, 1);
 		
 		var transformations = {};
@@ -753,7 +812,7 @@ function main() {
 		}
 
 		//Sphere Medium Rotating
-		if (true){
+		if (false){
 		gl.uniform1i(texProgram.u_Reflect, 1);
 		
 		var transformations = {};
@@ -771,7 +830,7 @@ function main() {
 		}
 
 		//Torus	
-		if (true){
+		if (false){
 		var transformations = {};
 		var translation = [-0.0,1.0,0];
 		var scale = [1.0, 1.0, 1.0];
@@ -790,52 +849,33 @@ function main() {
 		
 		for (var n = 0; n < Object.keys(id_s).length; n++){
 			key = Object.keys(id_s)[n];
+			if (id_s[key] != my_id || true){
 
-			var xx = parseFloat(ps_x[key]);
-			var yy = parseFloat(ps_y[key]);
-			var zz = parseFloat(ps_z[key]);
+				var xx = parseFloat(ps_x[key]);
+				var yy = parseFloat(ps_y[key]);
+				var zz = parseFloat(ps_z[key]);
 
-			//Move to goto position fluently
-			var dx = xx - goto_x[key];
-			var dy = yy - goto_y[key];
-			var dz = zz - goto_z[key];
-			ps_x[key] -= dx * .05;
-			ps_y[key] -= dy * .05;
-			ps_z[key] -= dz * .05;
+				//Move to goto position fluently
+				var dx = xx - goto_x[key];
+				var dy = yy - goto_y[key];
+				var dz = zz - goto_z[key];
+				ps_x[key] -= dx * .05;
+				ps_y[key] -= dy * .05;
+				ps_z[key] -= dz * .05;
 
-			//Move in predicted direction straightly
-			/*
-			var dx = delta_x[key];
-			var dy = delta_y[key];
-			var dz = delta_z[key];
-			var ddx = dx * .5;
-			var ddy = dy * .5;
-			var ddz = dz * .5;
-			var maxD = .3;
-			if (ddx > maxD){ ddx = maxD; }
-			if (ddx < -maxD){ ddx = -maxD; }
 
-			if (ddy > maxD){ ddy = maxD; }
-			if (ddy < -maxD){ ddy = -maxD; }
+				//Handle transformations
+				var transformations = {};
+				var translation = [xx, yy+2, zz];
+				var scale = [.4, .4, .4];
+				var rotation =  [m.angle*.2,0.0,1.0,0.0];
 
-			if (ddz > maxD){ ddz = maxD; }
-			if (ddz < -maxD){ ddz = -maxD; }
-			ps_x[key] -= ddx;
-			ps_y[key] -= ddy;
-			ps_z[key] -= ddz;
-			*/
+				transformations.translation = translation;
+				transformations.scale = scale;
+				transformations.rotation = rotation;
 
-			//Handle transformations
-			var transformations = {};
-			var translation = [xx-5, yy, zz];
-			var scale = [.4, .4, .4];
-			var rotation =  [m.angle*.2,0.0,1.0,0.0];
-
-			transformations.translation = translation;
-			transformations.scale = scale;
-			transformations.rotation = rotation;
-
-			drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+			}
 		}
 
 		gl.uniform1i(texProgram.u_Reflect, 0);
@@ -870,10 +910,8 @@ function main() {
 
 		//Toggle Post Effects on Canvas 2D
 		if (true){
-
 			mainCanvas.style.display = "block";
 			postEffects.style.display = "none";
-		
 		}
 		
 		window.requestAnimationFrame(tick, canvas);
@@ -895,6 +933,11 @@ var gg = 0;
 socket = new WebSocket("ws://" + window.location.host + "/");
 var my_id = Math.floor(Math.random() * (99))+1;
 var my_id_str = String(my_id);
+var color_r = new Array(4);
+var color_g = new Array(4);
+var color_b = new Array(4);
+color_r[0] = .9; color_g[0] = .1; color_b[0] = .1;
+color_r[1]= .1; color_g[1] = .9; color_b[1] = .1;
 var ps_x = {};
 var ps_y = {};
 var ps_z = {};
@@ -908,13 +951,18 @@ var delta_z = {};
 var dx = 0.0;
 var dy = 0.0;
 var dz = 0.0;
-var tile = new Array(25);
-var height = new Array(25);
-var goto_height = new Array(25);
+var tile = new Array(49);
+var height = new Array(49);
+var goto_height = new Array(49);
 var r_pos = new Array(3);
+var r_xyz = new Array(3);
 var rocketLaunch = 0;
+var killed = 0;
+var spawning = 0;
+var killDelay = 0;
+var id_r;
 
-for (var n = 0 ; n < 25; n ++){
+for (var n = 0 ; n < 49; n ++){
 	height[n] = 0;
 	goto_height[n] = 0;
 }
@@ -943,7 +991,9 @@ socket.onopen = function() {
     "r_x": r_x,
     "r_y": r_y,
     "r_z": r_z,
+    "killed": killed,
   }
+  killed = 0;
   rocketLaunch = 0;
 
   socket.send(JSON.stringify(data));
@@ -962,6 +1012,7 @@ socket.onmessage = function(e) {
   var r_x = encodeURI(data['r_x']);
   var r_y = encodeURI(data['r_y']);
   var r_z = encodeURI(data['r_z']);
+  var kill_id = encodeURI(data['killed']);
 
   id_str = String(id_new);
   id_s[id_str] = id_new;
@@ -984,9 +1035,39 @@ socket.onmessage = function(e) {
   //Add rockets
   if (parseInt(rl) == 1){
 	 m.clight = 1;
+	 r_xyz[0] = parseFloat(mx);
+	 r_xyz[1] = parseFloat(my);
+	 r_xyz[2] = parseFloat(mz);
 	 r_pos[0] = parseFloat(r_x);
 	 r_pos[1] = parseFloat(r_y);
 	 r_pos[2] = parseFloat(r_z);
+	 //console.log(ps_x[id_str]);
+	 r_id = id_str;
+
+	 //Update current if shot
+	 ps_x[id_str] = parseFloat(mx); 
+	 ps_y[id_str] = parseFloat(my); 
+	 ps_z[id_str] = parseFloat(mz);
+
+  }
+
+  //Kill if kill_id matches
+  if (parseInt(kill_id) == my_id && killDelay == 0){
+  	var oldpx = m.px; var oldpz = m.pz;
+  	m.px = Math.random() * 32; //Player x,y,z
+	m.pz = Math.random() * 32;
+	m.py = 40;
+	//m.lx += oldpx - m.px;
+	m.ly = 10;
+	//m.lz += oldpz - m.pz;
+	//m.tright = 1;
+	m.lx = m.px + Math.cos(m.turn*3.14/180);
+    m.lz = m.pz + Math.sin(m.turn*3.14/180);
+
+	m.jump = 0.0;
+	updateBackend = 1;
+	spawning = 1;
+	killDelay = 1;
   }
 
   /*delta_x[id_str] = ps_x[id_str] - parseFloat(mx);
@@ -1308,17 +1389,22 @@ function initAttributeVariable(gl, a_attribute, buffer) {
 /*
 Create Light objects and push to stack
 */
-lightVector = [];
-numLights = 0;
+var lightVector = [];
+var numLights = 0;
+var explosion = 0;
+var ex = 0.0;
+var ey = 0.0;
+var ez = 0.0;
 
-function createLight(x, y, z,   r, g ,b,  i,   dx,dy,dz){
-    let objLight = new LightObject(x,y,z, numLights, r,g,b,   i, dx,dy,dz);
+function createLight(x, y, z,   r, g ,b,  i,   dx,dy,dz,  time, pl){
+    let objLight = new LightObject(x,y,z, numLights, r,g,b,   i, dx,dy,dz,  time, pl);
     lightVector.push(objLight);
     
     numLights++;
     return objLight.get_ID();
 }
 
+var elapGlobal = 0.0;
 
 
 function drawLights(gl, program){
@@ -1326,9 +1412,12 @@ function drawLights(gl, program){
 
     //Add a Light
     if (m.clight == 1){
-      m.clight = 0;          
-	  var k = createLight(m.px, m.py, m.pz,  .9,.9,.1,  10.0,   
-	  			r_pos[0],r_pos[1],r_pos[2]);
+      	m.clight = 0;
+      	//\\\\\\\\\\\\\\\\\\console.log(my_id + " " + id_s[r_id]);
+      	var p = 0;
+      	if (id_s[r_id] > 50){ p = 1; }
+	  	var k = createLight(r_xyz[0],r_xyz[1],r_xyz[2],  color_r[p],color_g[p],color_b[p],  5.0,   
+  			r_pos[0],r_pos[1],r_pos[2],  0.0,  id_s[r_id]);
     }
 
     //Pop off a Light
@@ -1336,6 +1425,7 @@ function drawLights(gl, program){
       m.clight = 0;
       if (numLights > 0){
         numLights--;
+        //lightVector.shift();
         lightVector.pop();
       }
       var n = numLights;
@@ -1345,22 +1435,18 @@ function drawLights(gl, program){
 
     }
 
+
+
     //Cycle through the number of lights and set all according to what is stored in lightVector objects
     for (var n = 0; n < numLights; n++){
 
-    	//Delta Change Pos
+    	//Delta Change Pos / Move fired lights
     	var delta = lightVector[n].get_Delta();
     	var pos = lightVector[n].get_Pos();
 
-    	lightVector[n].set_Pos(pos[0]-delta[0]*.3, 
-    						   pos[1]-delta[1]*.3,
-    						   pos[2]-delta[2]*.3);
-
-    	for (var j = 0; j < 3; j++){
-    		if (pos[j] < -20 || pos[j] > 60){
-    			m.clight = -1;
-    		}
-    	}
+    	lightVector[n].set_Pos(pos[0]-delta[0]*.5 * elapGlobal, 
+    						   pos[1]-delta[1]*.5 * elapGlobal,
+    						   pos[2]-delta[2]*.5 * elapGlobal);
 
 
         var s = [0,0,0];
@@ -1372,6 +1458,23 @@ function drawLights(gl, program){
         }
 		i = lightVector[n].get_Intensity();
 
+		//Intensity if Light has a Timer
+		var gt = lightVector[n].get_Time();
+		if (gt != 0.0){
+			i = i * gt * .01;
+			lightVector[n].set_Time(gt-8.0);
+			if (gt <= 8.0){
+				lightVector.splice(n,1);
+				numLights--;
+				//Shader light set to inactive
+		        var k = n;
+     		    program.u_LightActive = gl.getUniformLocation(program, "u_LightActive["+ k +"]");
+     		    gl.uniform1i(program.u_LightActive, 0);
+
+				continue;
+			}
+		}
+
         program.u_LightActive = gl.getUniformLocation(program, "u_LightActive["+ n +"]");
         program.u_LightColorArray = gl.getUniformLocation(program, "u_LightColorArray["+ n +"]");
         program.u_LightPositionArray = gl.getUniformLocation(program, "u_LightPositionArray["+ n +"]");
@@ -1381,6 +1484,64 @@ function drawLights(gl, program){
         gl.uniform3f(program.u_LightColorArray, c[0], c[1], c[2]); 
         gl.uniform3f(program.u_LightPositionArray, s[0], s[1], s[2]); 
 		gl.uniform1f(program.u_LightIntensityArray,  i); 
+
+    	
+
+
+		//Light Collision
+		if (lightVector[n].get_Delta()[0] != 0.0){
+
+			//Rocket goes out of bounds
+			var t = 0;
+			for (var jj = 0; jj < 3; jj++){
+				if (pos[jj] < -40 || pos[jj] > 50){
+					t = 1;
+					playerID = lightVector[n].get_Player();
+					lightVector.splice(n,1);
+					numLights--;
+					var p = 0;
+			      	if (id_s[r_id] > 50){ p = 1; }
+					var k = createLight(s[0],s[1],s[2],  color_r[p],color_g[p],color_b[p],  15.0,   
+						0.0,0.0,0.0,   100.0,  playerID);
+				}
+			}
+			if (gt == 0.0){
+				t = 0;
+			}
+
+			//Collides with a Floor block
+			var co = 0;
+			for (var j = 0; j < 7; j++){
+				for (var k = 0; k < 7; k++){
+				
+					if (t == 1 || (tile[co] != " " && tile[co] != 0)){
+						var d = 8; //Distance of tiles
+						var o = 4; //Offset (so position is top left of tiles, not middle)
+
+						//X and Z coordinates
+						if (t == 1 || 
+							(s[0] >= j*d-o-0.5 && s[0] <= j*d+d-o+0.5 && s[2] >= k*d-o-0.5 && s[2] <= k*d+d-o+0.5)){
+							
+							//Y coords (height)
+							if (t == 1 ||
+								(s[1] < -height[co]-1.5 && s[1] >= -height[co]-d-2.5)){
+								playerID = lightVector[n].get_Player();
+								lightVector.splice(n,1);
+								numLights--;
+								var p = 0;
+						      	if (id_s[r_id] > 50){ p = 1; }
+								var k = createLight(s[0],s[1],s[2],  color_r[p],color_g[p],color_b[p],  15.0,   
+	  								0.0,0.0,0.0,   100.0,  playerID);
+							}
+						}
+						
+					}
+					co += 1;
+				}
+			}
+		}
+
+
     }
 
 
@@ -1502,7 +1663,13 @@ var oldlz = 0.0;
 var preventx = false;
 var preventz = false;
 var onFloor = true;
-var updateBackend = 1;
+var updateBackend = 0;
+
+
+var keyPressed = 0;
+var still = 0;
+var old_still = 0;
+var holding = 0;
 
 var g_last = Date.now();
 function animate(angle, m, tile, height){
@@ -1513,7 +1680,8 @@ function animate(angle, m, tile, height){
     if (m.ro == 0x0){
         elapsed = 0;
     }
-    var newAngle = angle + elapsed/50;
+    var newAngle = angle + elapsed * .02;
+    elapGlobal = elapsed * .08;
 	
 	//Collision
 	var c = 0;
@@ -1522,60 +1690,52 @@ function animate(angle, m, tile, height){
 	var speed = .125;
 	var look = 0;
 
-	//if (preventx == false){ oldx = m.px; oldlx = m.lx; }
-	//if (preventz == false){ oldz = m.pz; oldlz = m.lz; }
 	oldx = m.px; oldlx = m.lx;
 	oldz = m.pz; oldlz = m.lz;
 	
 	//Player height change
 	m.py -= m.jump;
-	m.ly -= m.jump;
+	if (spawning == 0){
+		m.ly -= m.jump;
+	}
+
+		
+    if (spawning == 1 && m.ly >= m.py){
+    	m.ly = m.py;
+    	console.log("passing");
+    }
 
 	var e = elapsed/10*speed;
   
   	still = 0;
     if (m.moveup >= 1){
-        //if (preventx == false){ m.px = m.px + Math.cos(m.turn*3.14/180)*speed; }
-        //if (preventz == false){ m.pz = m.pz + Math.sin(m.turn*3.14/180)*speed; }
         var ddx = Math.cos(m.turn*3.14/180)*e;
         var ddz = Math.sin(m.turn*3.14/180)*e;
 		m.px = m.px + ddx;
 		m.pz = m.pz + ddz;
         look = 1;
         still = 1;
-        //m.moveup-=1;
     }
     if (m.movedown >= 1){
-        //if (preventx == false){ m.px = m.px - Math.cos(m.turn*3.14/180)*speed; }
-        //if (preventz == false){ m.pz = m.pz - Math.sin(m.turn*3.14/180)*speed; }
 		m.px = m.px - Math.cos(m.turn*3.14/180)*e;
 		m.pz = m.pz - Math.sin(m.turn*3.14/180)*e;
         look = 1;
         still = 1;
-        //m.movedown-=1;
     }
   
     if (m.tright >= 1){
-        //m.turn+=4;
-        //if (preventx == false){ m.px = m.px + Math.cos((m.turn+90)*3.14/180)*speed; }
-        //if (preventz == false){ m.pz = m.pz + Math.sin((m.turn+90)*3.14/180)*speed; }
+
 		m.px = m.px + Math.cos((m.turn+90)*3.14/180)*e;
 		m.pz = m.pz + Math.sin((m.turn+90)*3.14/180)*e;
         look = 1;
         still = 1;
-        //m.lx = m.px + Math.cos(m.turn*3.14/180);
-        //m.lz = m.pz + Math.sin(m.turn*3.14/180);
-        //m.tright-=1;
+
     }
     if (m.tleft >= 1){
-        //m.turn-=4;
-        //if (preventx == false){ m.px = m.px + Math.cos((m.turn-90)*3.14/180)*speed; }
-        //if (preventz == false){ m.pz = m.pz + Math.sin((m.turn-90)*3.14/180)*speed; }
 		m.px = m.px + Math.cos((m.turn-90)*3.14/180)*e; 
 		m.pz = m.pz + Math.sin((m.turn-90)*3.14/180)*e;
         look = 1;	
         still = 1;
-        //m.tleft-=1;
     }
     if (keyPressed == 1){
     	updateBackend = 1;
@@ -1591,8 +1751,8 @@ function animate(angle, m, tile, height){
 	preventx = false;
 	preventz = false;
 	
-	for (var n = 0; n < 5; n++){
-		for (var k = 0; k < 5; k++){
+	for (var n = 0; n < 7; n++){
+		for (var k = 0; k < 7; k++){
 		
 			if (tile[c] != " " && tile[c] != 0){
 				var d = 8; //Distance of tiles
@@ -1608,7 +1768,15 @@ function animate(angle, m, tile, height){
 						m.ly -= cy;
 						if (falling == true){
 							falling = false;
-							//updateBackend = 1;
+							killDelay = 0;
+							if (spawning == 1){
+								//m.ly = m.py;
+								spawning = 0;
+							}
+							if (holding <= 0){
+								updateBackend = 1;
+								holding = 20;
+							}
 						}
 						onFloor = true;
 						m.jump = 0.0;
@@ -1619,6 +1787,7 @@ function animate(angle, m, tile, height){
 						m.py = -height[c];
 						m.ly -= cy;
 						falling = false;
+						killDelay = 0;
 						onFloor = true;
 					}
 					if (m.py < -height[c]-m.jump && m.py >= -height[c]-d-2){ 
@@ -1635,19 +1804,19 @@ function animate(angle, m, tile, height){
 					
 				}
 				
-				//if ((m.px >= n*d-o-1 && m.px <= n*d+d-o+1) || (m.pz >= k*d-o-1 && m.pz <= k*d+d-o+1)){
-				
-				//}
-				
 			}
 			c += 1;
 		}
 	}
 	if (falling == true){ //Player is falling
 		m.jump += .01;
-		if (m.py < -30){
-			m.py += 60;
-			m.ly += 60;
+		if (m.py < -40){
+			m.py += 70;
+			//m.ly += 70;
+			m.jump = 0.0;
+			killed = parseInt(my_id);
+			updateBackend = 1;
+
 		}
 	}
 	
@@ -1671,10 +1840,7 @@ function animate(angle, m, tile, height){
 }
 
 
-var keyPressed = 0;
-var still = 0;
-var old_still = 0;
-var holding = 0;
+var fireDelay = 0;
 
 function checkKey(e, m, type) {
     //console.log(e.keyCode);
@@ -1682,7 +1848,7 @@ function checkKey(e, m, type) {
     //Delay between sends to server
     if (holding == 0){
     	keyPressed = 1;
-    	holding = 10;
+    	holding = 20;
 	}else{
 		holding -= 1;
 	}
@@ -1694,10 +1860,10 @@ function checkKey(e, m, type) {
 
     e = e || window.event;
     if (e.keyCode == '67' && type == 5){ //c key
-      m.clight = 1;
+      //m.clight = 1;
     }
     if (e.keyCode == '88' && type == 5){ // x
-      m.clight = -1;
+      //m.clight = -1;
     }
     if ((e.keyCode == '39' || e.keyCode == '68')) {  // right
       m.tright = type;
@@ -1731,8 +1897,13 @@ function checkKey(e, m, type) {
      
     }
 
-    if (e.keyCode == '69' && type == 5){
+    if (e.keyCode == '69' && type == 5 && fireDelay <= 0){
       rocketLaunch = 1;
+      updateBackend = 1;
+      fireDelay = 0;
+    }
+    if (fireDelay > 0){
+    	fireDelay--;
     }
 
     

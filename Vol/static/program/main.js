@@ -623,6 +623,7 @@ function main() {
 						pos[2] > zz-hs && pos[2] < zz+hs){
 
 						killed = id_s[key];
+						active_id[key] = false;
 						updateBackend = 1;
 					}
 				}
@@ -898,7 +899,7 @@ function main() {
 		
 		for (var n = 0; n < Object.keys(id_s).length; n++){
 			key = Object.keys(id_s)[n];
-			if (id_s[key] != my_id || true){
+			if ((id_s[key] != my_id || false) && active_id[key] == true){ // true to show player too
 
 				var xx = parseFloat(ps_x[key]);
 				var yy = parseFloat(ps_y[key]);
@@ -912,8 +913,12 @@ function main() {
 
 				if (delta_x[key] != 0.0 || delta_y[key] != 0.0 || delta_z[key] != 0.0){
 					ps_x[key] += delta_x[key];
-					ps_y[key] += delta_y[key];
+					ps_y[key] -= delta_y[key];
 					ps_z[key] += delta_z[key];
+					if (delta_y[key] != 0.0){
+						delta_y[key] += .01;
+						//console.log(delta_y[key]);
+					}
 				}else{
 					ps_x[key] -= dx * .05;
 					ps_y[key] -= dy * .05;
@@ -923,7 +928,7 @@ function main() {
 
 				//Handle transformations
 				var transformations = {};
-				var translation = [xx+5, yy, zz];
+				var translation = [xx, yy, zz];
 				var scale = [.4, .4, .4];
 				var rotation =  [m.angle*.2,0.0,1.0,0.0];
 
@@ -1006,6 +1011,7 @@ var goto_z = {};
 var delta_x = {};
 var delta_y = {};
 var delta_z = {};
+var active_id = {};
 var dx = 0.0;
 var dy = 0.0;
 var dz = 0.0;
@@ -1016,7 +1022,7 @@ var r_pos = new Array(3);
 var r_xyz = new Array(3);
 var rocketLaunch = 0;
 var killed = 0;
-var spawning = 0;
+var spawning = 1;
 var killDelay = 0;
 var id_r;
 
@@ -1056,6 +1062,7 @@ socket.onopen = function() {
   }
   killed = 0;
   rocketLaunch = 0;
+  my_dy = 0.0;
 
   socket.send(JSON.stringify(data));
 }
@@ -1091,9 +1098,11 @@ socket.onmessage = function(e) {
 
   if (parseFloat(standing) == 0.0){
   	delta_x[id_str] = 0.0;
-  	delta_y[id_str] = 0.0;
+  	//delta_y[id_str] = 0.0;
   	delta_z[id_str] = 0.0;
   }
+
+  active_id[id_str] = true;
 
 
   //Update only if object coming into existance
@@ -1144,6 +1153,7 @@ socket.onmessage = function(e) {
 	updateBackend = 1;
 	spawning = 1;
 	killDelay = 1;
+	active_id[id_str] = false;
   }
 
   //delta_x[id_str] = ps_x[id_str] - parseFloat(mx);
@@ -1848,7 +1858,7 @@ function animate(angle, m, tile, height){
 
 	var e = elapsed/10*speed;
 	my_dx = 0;
-	my_dy = 0;
+	//my_dy = 0;
 	my_dz = 0;
   
   	still = 0;
@@ -2043,6 +2053,8 @@ function checkKey(e, m, type) {
     if (e.keyCode == '32' && type == 5) { //space
       if (onFloor == true){
         m.jump -= .4;
+        my_dy -= .4;
+        updateBackend = 1;
    	  }
     }
 	

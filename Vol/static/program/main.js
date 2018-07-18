@@ -124,9 +124,15 @@ var TEXTURE_FSHADER_SOURCE =
 	vec3 R = reflect(I, testNormal);
 	
 	vec4 color;
-	if (u_Reflect >= 0){ //No Reflection, only Material
+	//if (u_Reflect >= 0){ //No Reflection, only Material
 		color = texture2D(u_Sampler, v_TexCoord);
+		gl_FragColor = color;
+	//}
+	if (gl_FragColor.r > .6 && gl_FragColor.b > .9){
+	//	discard;
+		//return;
 	}
+
 
 	if (u_Reflect == 3){ //Reflect (half) and Material
 		color = (textureCube(u_Skybox, R)*.4) + texture2D(u_Sampler, v_TexCoord)*.6;
@@ -210,7 +216,7 @@ var TEXTURE_FSHADER_SOURCE =
 	//added += fogColor;
 	
     gl_FragColor = vec4(added, color.a);
-	
+
 	/*vec4 BrightColor;
 	
 	float brightness = dot(gl_FragColor.rgb, vec3(0.4126, 0.7152, 0.4722));
@@ -431,9 +437,12 @@ function main() {
 	var skyTex  = initTextures(gl, texProgram, './static/program/Textures/Sky/skybox_texture.jpg', 0);
 	var skyTex2 = initTextures(gl, texProgram, './static/program/Textures/Sky/skybox_texture2.jpg', 0);
 
-	var old_trinity = initTextures(gl, texProgram, './static/program/Textures/Misc/old_trinity.jpg', 0);
+
+	var old_trinity = initTextures(gl, texProgram, './static/program/Textures/Misc/old_trinity.png', 0);
+	var shia = initTextures(gl, texProgram, './static/program/Textures/Misc/shia.png', 0);
 	skyBox = initCube(gl, myCube);
 	land = initPlane(gl, myTorus);
+	planeObj = initPlaneSingle(gl, myTorus);
 	
 	var texture = gl.createTexture();   // Create a texture object
     if (!texture) {
@@ -500,6 +509,10 @@ function main() {
 	gl.enable(gl.DEPTH_TEST);
 	gl.clearColor(fogColor[0], fogColor[1], fogColor[2], 1.0);
 
+	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	gl.enable(gl.BLEND);
+
+
 
 
 	var viewMatrix = new Matrix4();
@@ -518,28 +531,28 @@ function main() {
 	//Overhead light with random color
 	var r = Math.random() * .3; var g = Math.random() * .3; var b = Math.random() * .3;
 	//var k = createLight(20, 4, 20.0,     0.5+r, 0.5+g, 0.5+b,   20.0,   0,0,0,   0.0,  0);
-	var k = createLight(20, 4, 20.0,     0.6, 0.6, 0.6,   20.0,   0,0,0,  0.0,  0);  
+	var k = createLight(20, 4, 20.0,     0.6, 0.6, 0.6,   30.0,   0,0,0,  0.0,  0);  
 	//var k = createLight(20,20,20,    .3, .3, .8,       30.0,    0.0,    0); 
 
 	//Structures
-	if (false){
-	var numStruc = 5;
+	if (true){
+	var numStruc = 7;
 	var struc_t = [];
 	var struc_x = [];
 	var struc_y = [];
 	var struc_z = [];
 	var struc_s = [];
 	for (var n = 0; n < numStruc; n++){
-		var r = Math.floor( Math.random() * 3 );
-		var type = "Cube";
-		if (r == 0){ type = "Sphere"; }
-		if (r == 1){ type = "Torus"; }
-		if (r == 2){ type = "Cube"; }
+		var r = Math.floor( Math.random() * 2 );
+		var type = "Plane"; //Default
+		if (r == 0){ type = "Plane"; } //Sphere
+		if (r == 1){ type = "Torus"; }  //Torus
+		//if (r == 2){ type = "Plane"; } //Cube
 		struc_t.push(type);
-		struc_x.push( Math.random() * 50-10);
-		struc_y.push( Math.random() * 7 + 3);
-		struc_z.push( Math.random() * 50-10);
-		struc_s.push( Math.random() * 1.5 + .5);
+		struc_x.push( Math.random() * 50+10);
+		struc_y.push( Math.random() * 7 + 8);
+		struc_z.push( Math.random() * 50+10);
+		struc_s.push( Math.random() * 1.5 + 1.0);
 	}
 	}
 
@@ -566,7 +579,7 @@ function main() {
 		gl.uniform4fv(texProgram.u_Eye, eye);           // Eye point
 		gl.uniform4fv(texProgram.u_Eye2, eye);
 
-		viewMatrix.setPerspective(90.0, canvas.width/canvas.height, 0.1, 200.0);
+		viewMatrix.setPerspective(90.0, canvas.width/canvas.height, 0.1, 250.0);
 		projMatrix.setLookAt(m.px, m.py, m.pz ,   m.lx, m.ly, m.lz, 0.0, 1.0, 0.0);
 
 
@@ -668,6 +681,21 @@ function main() {
 				if (tile[c] == "Tile" || tile[c] == 2){
 					drawTexObj(gl, texProgram, cube, tileMaterial, transformations, viewProjMatrix, tileNormal);
 				}
+				/*if ((tile[c] == "" || tile[c] == 0)){ //Painting
+				
+					scale = [ 1.0, 1.0, 1.0 ];
+					rotation =  [90.0, 1.0,0.0,0.0];
+					
+					transformations.translation = [ 
+						translation[0], 
+						1, 
+						translation[2]-2.8-8 ];
+					transformations.scale = scale;
+					transformations.rotation = rotation;
+
+					drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
+				
+				}*/
 				
 
 				c += 1;
@@ -679,7 +707,7 @@ function main() {
 		}
 		
 		//Structures
-		if (false){
+		if (true){
 		for (var c = 0; c < numStruc; c++){
 			var transformations = {};
 			var translation = [ struc_x[c], struc_y[c], struc_z[c] ];
@@ -690,7 +718,7 @@ function main() {
 			transformations.scale = scale;
 			transformations.rotation = rotation;
 
-			if (struc_t[c] == "Sphere"){
+			/*if (struc_t[c] == "Sphere"){
 				gl.uniform1i(texProgram.u_Reflect, 1);
 				
 				translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
@@ -701,18 +729,22 @@ function main() {
 				
 				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
 				gl.uniform1i(texProgram.u_Reflect, 0);
-			}
+			}*/
 			if (struc_t[c] == "Torus"){
 			
-				scale = [1.5*struc_s[c],1.5*struc_s[c],1.5*struc_s[c]];
-				rotation =  [90.0+m.angle,0.0,1.0,0.0];
+				scale = [2.0*struc_s[c], 2.0*struc_s[c],  2.0*struc_s[c] ];
+				rotation =  [90.0+m.angle+c*90.0,.5,1.0,.5];
 				
+				transformations.translation = [ 
+					translation[0], 
+					translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, 
+					translation[2] ];
 				transformations.scale = scale;
 				transformations.rotation = rotation;
 
 				drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
 			}
-			
+			/*
 			if (struc_t[c] == "Cube"){
 			
 				translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
@@ -722,8 +754,25 @@ function main() {
 				transformations.translation = translation;
 
 				drawTexObj(gl, texProgram, cube,  woodMaterial, transformations, viewProjMatrix, woodNormal);
-			}
+			}*/
+			if (struc_t[c] == "Plane"){ //Painting
 			
+				scale = [ 1.0, 1.0, 1.0 ];
+				rotation =  [90.0, 1.0,0.0,0.0];
+				
+				transformations.translation = [ 
+					8.0*c, 
+					0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
+					-4.0 ];
+				transformations.scale = scale;
+				transformations.rotation = rotation;
+
+				if (c%2 == 1){
+					drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
+				}else{
+					drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
+				}
+			}
 		}
 		
 		}
@@ -742,7 +791,7 @@ function main() {
 		drawTexObj(gl, texProgram, cube, solidGray, transformations, viewProjMatrix, torusNormalMap);
 		}
 		
-		//Land
+		//Land / Plane
 		if (false){
 		
 		gl.uniform3f(texProgram.u_AmbientLight, 0.4,.4,.4);
@@ -859,14 +908,22 @@ function main() {
 				var dx = xx - goto_x[key];
 				var dy = yy - goto_y[key];
 				var dz = zz - goto_z[key];
-				ps_x[key] -= dx * .05;
-				ps_y[key] -= dy * .05;
-				ps_z[key] -= dz * .05;
+				
+
+				if (delta_x[key] != 0.0 || delta_y[key] != 0.0 || delta_z[key] != 0.0){
+					ps_x[key] += delta_x[key];
+					ps_y[key] += delta_y[key];
+					ps_z[key] += delta_z[key];
+				}else{
+					ps_x[key] -= dx * .05;
+					ps_y[key] -= dy * .05;
+					ps_z[key] -= dz * .05;
+				}
 
 
 				//Handle transformations
 				var transformations = {};
-				var translation = [xx, yy+2, zz];
+				var translation = [xx+5, yy, zz];
 				var scale = [.4, .4, .4];
 				var rotation =  [m.angle*.2,0.0,1.0,0.0];
 
@@ -885,7 +942,7 @@ function main() {
 		if (true){
 		var transformations = {};
 		var translation = [m.px, m.py, m.pz];
-		var scale = [25,25,25];
+		var scale = [35,35,35];
 		var rotation =  [0.0,1.0,0.0,0.0];
 
 		transformations.translation = translation;
@@ -936,8 +993,9 @@ var my_id_str = String(my_id);
 var color_r = new Array(4);
 var color_g = new Array(4);
 var color_b = new Array(4);
-color_r[0] = .9; color_g[0] = .1; color_b[0] = .1;
+color_r[0] = 1.0; color_g[0] = .2; color_b[0] = .2;
 color_r[1]= .1; color_g[1] = .9; color_b[1] = .1;
+color_r[2]= .9; color_g[2] = .9; color_b[2] = .1;
 var ps_x = {};
 var ps_y = {};
 var ps_z = {};
@@ -992,6 +1050,9 @@ socket.onopen = function() {
     "r_y": r_y,
     "r_z": r_z,
     "killed": killed,
+    "my_dx": my_dx,
+    "my_dy": my_dy,
+    "my_dz": my_dz,
   }
   killed = 0;
   rocketLaunch = 0;
@@ -1013,12 +1074,27 @@ socket.onmessage = function(e) {
   var r_y = encodeURI(data['r_y']);
   var r_z = encodeURI(data['r_z']);
   var kill_id = encodeURI(data['killed']);
+  var d_x = encodeURI(data['my_dx']);
+  var d_y = encodeURI(data['my_dy']);
+  var d_z = encodeURI(data['my_dz']);
 
   id_str = String(id_new);
   id_s[id_str] = id_new;
   goto_x[id_str] = parseFloat(mx);
   goto_y[id_str] = parseFloat(my);
   goto_z[id_str] = parseFloat(mz);
+
+  //Delta Movement Direction Prediction
+  delta_x[id_str] = parseFloat(d_x);
+  delta_y[id_str] = parseFloat(d_y); 
+  delta_z[id_str] = parseFloat(d_z);
+
+  if (parseFloat(standing) == 0.0){
+  	delta_x[id_str] = 0.0;
+  	delta_y[id_str] = 0.0;
+  	delta_z[id_str] = 0.0;
+  }
+
 
   //Update only if object coming into existance
   if (ps_x[id_str] == undefined){
@@ -1036,7 +1112,7 @@ socket.onmessage = function(e) {
   if (parseInt(rl) == 1){
 	 m.clight = 1;
 	 r_xyz[0] = parseFloat(mx);
-	 r_xyz[1] = parseFloat(my);
+	 r_xyz[1] = parseFloat(my-1.0);
 	 r_xyz[2] = parseFloat(mz);
 	 r_pos[0] = parseFloat(r_x);
 	 r_pos[1] = parseFloat(r_y);
@@ -1070,15 +1146,9 @@ socket.onmessage = function(e) {
 	killDelay = 1;
   }
 
-  /*delta_x[id_str] = ps_x[id_str] - parseFloat(mx);
-  delta_y[id_str] = ps_y[id_str] - parseFloat(my);
-  delta_z[id_str] = ps_z[id_str] - parseFloat(mz);
-
-  if (parseFloat(standing) == 0.0){
-  	delta_x[id_str] = 0.0;
-  	delta_y[id_str] = 0.0;
-  	delta_z[id_str] = 0.0;
-  }*/
+  //delta_x[id_str] = ps_x[id_str] - parseFloat(mx);
+  //delta_y[id_str] = ps_y[id_str] - parseFloat(my);
+  //delta_z[id_str] = ps_z[id_str] - parseFloat(mz);
 
   var board_temp = encodeURI(data['board']);
   var r = decodeURI(board_temp);
@@ -1271,6 +1341,69 @@ function initPlane(gl, myModel){
 
 
 
+/**
+ * initPlaneSingle - Initialize Plane arrays and buffers
+ * @param {Object} gl - the WebGL rendering context
+ * @param {Object} o - Holds cube object informations (Buffers and indices)
+ */
+function initPlaneSingle(gl, myModel){
+  // v1-----v0
+  //  |      |
+  //  |      |
+  // v2-----v3
+  var v = [];
+  var n = [];
+  var t = [];
+  var i = [];
+  var tex = 1;
+  var c = 0;
+  for (var y = 0; y < 1; y++){
+	for (var x = 0; x < 1; x++){
+		v = v.concat([2+x*4, 0, 2+y*4,   -2+x*4, 0, 2+y*4,    -2+x*4, 0, -2+y*4,   2+x*4, 0, -2+y*4]);
+		n = n.concat([0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0]); // v0-v1-v2-v3 front
+		t = t.concat([tex, tex,    0.0, tex,     0.0, 0.0,   tex, 0.0]); // v0-v1-v2-v3 front
+		i = i.concat([0+c*4,1+c*4,2+c*4,  0+c*4,2+c*4,3+c*4]);
+		c += 1;
+	}
+  }
+  
+  var vertices = new Float32Array(
+    v
+  );
+  var normals = new Float32Array(
+	n
+  );
+  var texCoords = new Float32Array(
+	t
+  );
+
+  var indices = new Uint16Array(i);
+  
+  var tangents = new Float32Array(myModel.meshes[0].tangents);
+  var bitangents = new Float32Array(myModel.meshes[0].bitangents);
+
+  var o = new Object();
+  o.vertexBuffer = initArrayBufferForLaterUse(gl, vertices, 3, gl.FLOAT);
+  o.texCoordBuffer = initArrayBufferForLaterUse(gl, texCoords, 2, gl.FLOAT);
+  o.normalBuffer = initArrayBufferForLaterUse(gl, normals, 3, gl.FLOAT);
+  o.tangentBuffer = initArrayBufferForLaterUse(gl, tangents, 3, gl.FLOAT);
+  o.bitangentBuffer = initArrayBufferForLaterUse(gl, bitangents, 3, gl.FLOAT);
+  
+  o.indexBuffer = initElementArrayBufferForLaterUse(gl, indices, gl.UNSIGNED_SHORT);
+  o.numIndices = indices.length;
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+  
+  return o;
+
+}
+
+
+
+
+
+
 
 
 
@@ -1415,7 +1548,8 @@ function drawLights(gl, program){
       	m.clight = 0;
       	//\\\\\\\\\\\\\\\\\\console.log(my_id + " " + id_s[r_id]);
       	var p = 0;
-      	if (id_s[r_id] > 50){ p = 1; }
+      	if (id_s[r_id] > 33){ p = 1; }
+      	if (id_s[r_id] > 66){ p = 2; }
 	  	var k = createLight(r_xyz[0],r_xyz[1],r_xyz[2],  color_r[p],color_g[p],color_b[p],  5.0,   
   			r_pos[0],r_pos[1],r_pos[2],  0.0,  id_s[r_id]);
     }
@@ -1494,13 +1628,14 @@ function drawLights(gl, program){
 			//Rocket goes out of bounds
 			var t = 0;
 			for (var jj = 0; jj < 3; jj++){
-				if (pos[jj] < -40 || pos[jj] > 50){
+				if (pos[jj] < -60 || pos[jj] > 60){
 					t = 1;
 					playerID = lightVector[n].get_Player();
 					lightVector.splice(n,1);
 					numLights--;
 					var p = 0;
-			      	if (id_s[r_id] > 50){ p = 1; }
+			      	if (id_s[r_id] > 33){ p = 1; }
+			      	if (id_s[r_id] > 66){ p = 2; }
 					var k = createLight(s[0],s[1],s[2],  color_r[p],color_g[p],color_b[p],  15.0,   
 						0.0,0.0,0.0,   100.0,  playerID);
 				}
@@ -1529,7 +1664,8 @@ function drawLights(gl, program){
 								lightVector.splice(n,1);
 								numLights--;
 								var p = 0;
-						      	if (id_s[r_id] > 50){ p = 1; }
+						      	if (id_s[r_id] > 33){ p = 1; }
+						      	if (id_s[r_id] > 66){ p = 2; }
 								var k = createLight(s[0],s[1],s[2],  color_r[p],color_g[p],color_b[p],  15.0,   
 	  								0.0,0.0,0.0,   100.0,  playerID);
 							}
@@ -1585,6 +1721,8 @@ function drawCube(gl, program, o, transformations, viewProjMatrix) {
         transformations.rotation[1], 
         transformations.rotation[2], 
         transformations.rotation[3]);
+    g_modelMatrix.rotate(
+        180,0,1,0);
     g_modelMatrix.translate(0, -1 * (transformations.translation[1]/2 + 1), 0);
     g_modelMatrix.scale(transformations.scale[0], transformations.scale[1], transformations.scale[2]);
 
@@ -1665,6 +1803,10 @@ var preventz = false;
 var onFloor = true;
 var updateBackend = 0;
 
+var my_dx = 0;
+var my_dy = 0;
+var my_dz = 0;
+
 
 var keyPressed = 0;
 var still = 0;
@@ -1698,14 +1840,16 @@ function animate(angle, m, tile, height){
 	if (spawning == 0){
 		m.ly -= m.jump;
 	}
-
 		
     if (spawning == 1 && m.ly >= m.py){
     	m.ly = m.py;
-    	console.log("passing");
+    	//console.log("passing");
     }
 
 	var e = elapsed/10*speed;
+	my_dx = 0;
+	my_dy = 0;
+	my_dz = 0;
   
   	still = 0;
     if (m.moveup >= 1){
@@ -1713,27 +1857,40 @@ function animate(angle, m, tile, height){
         var ddz = Math.sin(m.turn*3.14/180)*e;
 		m.px = m.px + ddx;
 		m.pz = m.pz + ddz;
+		my_dx += ddx;
+		my_dz += ddz;
         look = 1;
         still = 1;
     }
     if (m.movedown >= 1){
-		m.px = m.px - Math.cos(m.turn*3.14/180)*e;
-		m.pz = m.pz - Math.sin(m.turn*3.14/180)*e;
+    	var ddx = - Math.cos(m.turn*3.14/180)*e;
+    	var ddz = - Math.sin(m.turn*3.14/180)*e;
+		m.px = m.px + ddx;
+		m.pz = m.pz + ddz;
+		my_dx += ddx;
+		my_dz += ddz;
         look = 1;
         still = 1;
     }
   
     if (m.tright >= 1){
-
-		m.px = m.px + Math.cos((m.turn+90)*3.14/180)*e;
-		m.pz = m.pz + Math.sin((m.turn+90)*3.14/180)*e;
+    	var ddx = Math.cos((m.turn+90)*3.14/180)*e;
+    	var ddz = Math.sin((m.turn+90)*3.14/180)*e;
+		m.px = m.px + ddx;
+		m.pz = m.pz + ddz;
+		my_dx += ddx;
+		my_dz += ddz;
         look = 1;
         still = 1;
 
     }
     if (m.tleft >= 1){
-		m.px = m.px + Math.cos((m.turn-90)*3.14/180)*e; 
-		m.pz = m.pz + Math.sin((m.turn-90)*3.14/180)*e;
+    	var ddx = Math.cos((m.turn-90)*3.14/180)*e;
+    	var ddz = Math.sin((m.turn-90)*3.14/180)*e;
+		m.px = m.px + ddx;
+		m.pz = m.pz + ddz;
+		my_dx += ddx;
+		my_dz += ddz;
         look = 1;	
         still = 1;
     }
@@ -1810,6 +1967,7 @@ function animate(angle, m, tile, height){
 	}
 	if (falling == true){ //Player is falling
 		m.jump += .01;
+		if (spawning == 1){ m.jump -= .007; }
 		if (m.py < -40){
 			m.py += 70;
 			//m.ly += 70;
@@ -1835,6 +1993,10 @@ function animate(angle, m, tile, height){
     if (updateBackend == 1){
 		updateBackend = 2;
 	}
+
+    if (fireDelay > 0){
+    	fireDelay--;
+    }
 
     return newAngle % (360*2);
 }
@@ -1897,13 +2059,10 @@ function checkKey(e, m, type) {
      
     }
 
-    if (e.keyCode == '69' && type == 5 && fireDelay <= 0){
+    if (e.keyCode == '69' && type == 5 && fireDelay <= 0 && spawning == 0){
       rocketLaunch = 1;
       updateBackend = 1;
-      fireDelay = 0;
-    }
-    if (fireDelay > 0){
-    	fireDelay--;
+      fireDelay = 5;
     }
 
     

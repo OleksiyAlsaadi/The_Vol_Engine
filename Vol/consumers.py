@@ -97,6 +97,9 @@ def ws_message(message):
             "r_y": data['r_y'],
             "r_z": data['r_z'],
             "killed": data['killed'],
+            "my_dx": data['my_dx'],
+            "my_dy": data['my_dy'],
+            "my_dz": data['my_dz'],
         }),
     })
 	return

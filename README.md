@@ -2,7 +2,6 @@
 
 Multi-player First Person Shooter
 
+<img src="/Screenshots/icons.png" width="50%">
 
-![Alt text](/Screenshots/icons.png?raw=true "Icons")
-
-![Alt text](/Screenshots/enemy.png?raw=true "Other Players")
+<img src="/Screenshots/enemy.png" width="50%">

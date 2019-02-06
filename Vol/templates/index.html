@@ -10,30 +10,29 @@
 
 {% block content %}
 
-<div class="top-bar">
-  <div class="top-bar-left">
-    <ul class="dropdown menu" data-dropdown-menu>
-      <li class="menu-text"> Vol </li>
-    </ul>
-  </div>
+<!-- Latest compiled and minified CSS -->
 
-  <div class="top-bar-left">
-    <form>
-      
-      <input type="submit" class="button" id="clear" value="Apply">
-    </form>
-  </div>
 
-  <div class="top-bar-left">
-    <a href="/Vol"> Vol </a>
-    <br>
-    <a href="/"> Index </a>
+<style>
+  .rect1 {
+    border-radius: 8px;
+    background: rgba(233,230,243,1.0);
+    font-size:17px;
+    padding: 2px;
+    min-width: 30px;
+    height: 30px;
+    color: rgba(62,128,187,1.0);
+    transition: all .2s ease-in-out; 
+  }
+  .rect1:hover {
+    transform: scale(1.3);
+  }
+</style>
 
-    <input id="clickMe" type="button" value="Toggle Post-Effects" onclick="doFunction();" />
-    
-  </div>
+   <!-- <div style="color:blue;"> /Vol </div>  -->
 
-</div>
+
+
 
 
 {% endblock %}
@@ -45,41 +44,75 @@
 {% block scripts %}
 
 
-<div>
+      <!-- Start of Canvas -->
 
-<div class="row">
-  
-  <center>
-  <body onload="loadModels()">
-  
-    <div id="mainCanvas">
-      <canvas id="webgl" width="600" height="600" tabindex="1">
-        Please use a browser that supports "canvas"
-      </canvas>
-    </div>
+<body onload="loadModels()">
 
-    <script src="{% static "lib/webgl-utils.js" %}"></script>
-    <script src="{% static "lib/webgl-debug.js" %}"></script>
-    <script src="{% static "lib/cuon-utils.js" %}"></script>
-    <script src="{% static "lib/cuon-matrix.js" %}"></script>
+  <div class="container-fluid">
+    <div class="row">
 
-    <script src="{% static "program/initObjects.js" %}"></script>
-    <script src="{% static "program/lightClass.js" %}"></script>
-    <script src="{% static "program/main.js" %}"></script>
-    <script src="{% static "program/loadObject.js" %}"></script>
+      <div class="col-sm-3" style="margin-left:30px;">
+        <br>
+        <div class="rect1" style="width: 150px; height:80px; font-size:30px;"> 
+          <div style="margin-left:50px;"> <b> Vol </b> </div> 
+        </div>  
 
-  </body>
-  
-  <div id="postEffects">
-    <canvas id="post" width="600" height="600" tabindex="1">
-      2D Context Copy
-    </canvas>
-  </div>
-  </center>
+        <br>
+        <div class="rect1" style="width: 250px;"> 
+          <div style="margin-left:10px;">  A Project by Oleksiy Al-saadi </div>
+        </div>
 
-</div>
+        <br>
+        <div class="rect1" style="width: 120px;"> 
+          <div style="margin-left:10px;"> Use Firefox! </div>
+        </div>
 
+        <br>
+        <div class="rect1" style="width: 190px;"> 
+          <div style="margin-left:10px;">  Press Space to Jump </div>
+        </div>
 
+        <br>
+        <div class="rect1" style="width: 160px;"> 
+          <div style="margin-left:10px;">  Press E to Shoot </div>
+        </div>
+
+        <br>
+        <div class="rect1" style="width: 250px;"> 
+          <div style="margin-left:10px;">  Esc to regain mouse control </div>
+        </div>
+
+      </div>
+      
+      <div class="col-sm-8" id="mainCanvas">
+
+          <canvas id="webgl" width="200" height="200" tabindex="1">
+            Please use a browser that supports "canvas"
+          </canvas>
+
+        <script src="{% static "lib/webgl-utils.js" %}"></script>
+        <script src="{% static "lib/webgl-debug.js" %}"></script>
+        <script src="{% static "lib/cuon-utils.js" %}"></script>
+        <script src="{% static "lib/cuon-matrix.js" %}"></script>
+
+        <script src="{% static "program/initObjects.js" %}"></script>
+        <script src="{% static "program/lightClass.js" %}"></script>
+        <script src="{% static "program/main.js" %}"></script>
+        <script src="{% static "program/loadObject.js" %}"></script>
+
+      </div>
+
+      <div id="postEffects">
+        <canvas id="post" width="10" height="10" tabindex="1">
+          2D Context Copy
+        </canvas>
+      </div>
+
+    </div> <!-- row -->
+
+  </div> <!-- container -->
+
+</body>
 
 
 {% endblock %}

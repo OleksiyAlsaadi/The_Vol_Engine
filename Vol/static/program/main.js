@@ -243,8 +243,6 @@ var normalMatrix = new Matrix4();
 
 
 
-
-
   /*
   
 var LIGHT_FSHADER_SOURCE =
@@ -301,7 +299,7 @@ function main() {
 	canvas.height = window.innerHeight
 		|| document.documentElement.clientHeight
 		|| document.body.clientHeight;
-	canvas.height *= .90;
+	//canvas.height *= .90;
 	canvas.width = canvas.height;
 	post_canvas.height = canvas.height;
 	post_canvas.width = canvas.width;
@@ -458,7 +456,6 @@ function main() {
 
     sleep(2000);
 	
-	
 
 	function loadCubeMap(scene) {
 		var texture = gl.createTexture();
@@ -536,24 +533,24 @@ function main() {
 
 	//Structures
 	if (true){
-	var numStruc = 7;
-	var struc_t = [];
-	var struc_x = [];
-	var struc_y = [];
-	var struc_z = [];
-	var struc_s = [];
-	for (var n = 0; n < numStruc; n++){
-		var r = Math.floor( Math.random() * 2 );
-		var type = "Plane"; //Default
-		if (r == 0){ type = "Plane"; } //Sphere
-		if (r == 1){ type = "Torus"; }  //Torus
-		//if (r == 2){ type = "Plane"; } //Cube
-		struc_t.push(type);
-		struc_x.push( Math.random() * 50+10);
-		struc_y.push( Math.random() * 7 + 8);
-		struc_z.push( Math.random() * 50+10);
-		struc_s.push( Math.random() * 1.5 + 1.0);
-	}
+		var numStruc = 7;
+		var struc_t = [];
+		var struc_x = [];
+		var struc_y = [];
+		var struc_z = [];
+		var struc_s = [];
+		for (var n = 0; n < numStruc; n++){
+			var r = Math.floor( Math.random() * 2 );
+			var type = "Plane"; //Default
+			if (r == 0){ type = "Plane"; } //Sphere
+			//if (r == 1){ type = "Torus"; }  //Torus
+			//if (r == 2){ type = "Plane"; } //Cube
+			struc_t.push(type);
+			struc_x.push( Math.random() * 50+10);
+			struc_y.push( Math.random() * 7 + 8);
+			struc_z.push( Math.random() * 50+10);
+			struc_s.push( Math.random() * 1.5 + 1.0);
+		}
 	}
 
 	
@@ -589,86 +586,129 @@ function main() {
 
 		//Rocket Objects 
 		if (true){
-		for (var n = 0; n < numLights; n++){
+			for (var n = 0; n < numLights; n++){
 
-			var pos = lightVector[n].get_Pos();
-			var transformations = {};
-			var translation = [pos[0], pos[1]+0.2, pos[2]];
-			var scale = [0.1, 0.1, 0.1];
-			var rotation =  [0.0,0.0,1.0,0.0];
+				var pos = lightVector[n].get_Pos();
+				var transformations = {};
+				var translation = [pos[0], pos[1]+0.2, pos[2]];
+				var scale = [0.1, 0.1, 0.1];
+				var rotation =  [0.0,0.0,1.0,0.0];
 
-			transformations.translation = translation;
-			transformations.scale = scale;
-			transformations.rotation = rotation;
+				transformations.translation = translation;
+				transformations.scale = scale;
+				transformations.rotation = rotation;
 
-			if (n > 0){
-				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
-			}
+				if (n > 0){
+					drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+				}
 
-			//If hit an Enemy/ Enemy Collide
-			for (var nj = 0; nj < Object.keys(id_s).length; nj++){
-				key = Object.keys(id_s)[nj];
-				//console.log(lightVector[n].get_Player());
-				//console.log(my_id);
-				if (lightVector[n].get_Player() != id_s[key]){
+				//If hit an Enemy/ Enemy Collide
+				for (var nj = 0; nj < Object.keys(id_s).length; nj++){
+					key = Object.keys(id_s)[nj];
+					//console.log(lightVector[n].get_Player());
+					//console.log(my_id);
+					if (lightVector[n].get_Player() != id_s[key]){
 
-					var xx = parseFloat(ps_x[key]);
-					var yy = parseFloat(ps_y[key]);
-					var zz = parseFloat(ps_z[key]);
+						var xx = parseFloat(ps_x[key]);
+						var yy = parseFloat(ps_y[key]);
+						var zz = parseFloat(ps_z[key]);
 
-					hs = 2.0; //hitsize/hitbox
+						hs = 2.0; //hitsize/hitbox
 
-					if (pos[0] > xx-hs && pos[0] < xx+hs &&
-						pos[1] > yy-hs && pos[1] < yy+hs &&
-						pos[2] > zz-hs && pos[2] < zz+hs){
+						if (pos[0] > xx-hs && pos[0] < xx+hs &&
+							pos[1] > yy-hs && pos[1] < yy+hs &&
+							pos[2] > zz-hs && pos[2] < zz+hs){
 
-						killed = id_s[key];
-						active_id[key] = false;
-						updateBackend = 1;
+							killed = id_s[key];
+							active_id[key] = false;
+							updateBackend = 1;
+						}
 					}
 				}
-			}
 
-		}
+			}
 		}
 	
 		//Floor Tiles
 		if (true){
 
-		gl.uniform1i(texProgram.u_Reflect, 3);
-		
-		var c = 0;
-		for (var n = 0; n < 7; n++){
-			for (var k = 0; k < 7; k++){
-
-				var downSpeed = .05;
+			gl.uniform1i(texProgram.u_Reflect, 3);
 			
-				//Lower Platforms
-				if (goto_height[c] < height[c]){
-					height[c] -= downSpeed;
-				}
-				if (goto_height[c] > height[c]){
-					height[c] += downSpeed;
+			var c = 0;
+			for (var n = 0; n < 7; n++){
+				for (var k = 0; k < 7; k++){
 
-					//Bring player on platform down as well
-					if (tile[c] != " " && tile[c] != 0){
-						var d = 8;
-						var o = 4;
-						if (m.px >= n*d-o-1 && m.px <= n*d+d-o+1 && m.pz >= k*d-o-1 && m.pz <= k*d+d-o+1){
-							if (m.py <= -height[c]+.1 && m.py >= -height[c]-.1){ 
-								m.py -= downSpeed;
-								m.ly -= downSpeed;
+					var downSpeed = .05;
+				
+					//Lower Platforms
+					if (goto_height[c] < height[c]){
+						height[c] -= downSpeed;
+					}
+					if (goto_height[c] > height[c]){
+						height[c] += downSpeed;
+
+						//Bring player on platform down as well
+						if (tile[c] != " " && tile[c] != 0){
+							var d = 8;
+							var o = 4;
+							if (m.px >= n*d-o-1 && m.px <= n*d+d-o+1 && m.pz >= k*d-o-1 && m.pz <= k*d+d-o+1){
+								if (m.py <= -height[c]+.1 && m.py >= -height[c]-.1){ 
+									m.py -= downSpeed;
+									m.ly -= downSpeed;
+								}
 							}
 						}
+
+					}
+					if (goto_height[c] > height[c]-.1 && goto_height[c] < height[c]+.1){
+						height[c] = goto_height[c];
 					}
 
-				}
-				if (goto_height[c] > height[c]-.1 && goto_height[c] < height[c]+.1){
-					height[c] = goto_height[c];
-				}
+					var transformations = {};
+					var translation = [0.0+n*8, -6-height[c]*1, 0.0+k*8];
+					var scale = [8,8,8];
+					var rotation =  [0.0,0.0,1.0,0.0];
 
+					transformations.translation = translation;
+					transformations.scale = scale;
+					transformations.rotation = rotation;
+
+					if (tile[c] == "Geo" || tile[c] == 1 || tile[c] == 3){
+						drawTexObj(gl, texProgram, cube, geoMaterial, transformations, viewProjMatrix, geoNormal);
+					}
+					if (tile[c] == "Tile" || tile[c] == 2){
+						drawTexObj(gl, texProgram, cube, tileMaterial, transformations, viewProjMatrix, tileNormal);
+					}
+					/*if ((tile[c] == "" || tile[c] == 0)){ //Painting
+					
+						scale = [ 1.0, 1.0, 1.0 ];
+						rotation =  [90.0, 1.0,0.0,0.0];
+						
+						transformations.translation = [ 
+							translation[0], 
+							1, 
+							translation[2]-2.8-8 ];
+						transformations.scale = scale;
+						transformations.rotation = rotation;
+
+						drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
+					
+					}*/
+					
+
+					c += 1;
+				}
+			}
+			
+			gl.uniform1i(texProgram.u_Reflect, 0);
+		
+		}
+		
+		//Structures
+		if (true){
+			for (var c = 0; c < numStruc; c++){
 				var transformations = {};
-				var translation = [0.0+n*8, -6-height[c]*1, 0.0+k*8];
+				var translation = [ struc_x[c], struc_y[c], struc_z[c] ];
 				var scale = [8,8,8];
 				var rotation =  [0.0,0.0,1.0,0.0];
 
@@ -676,143 +716,100 @@ function main() {
 				transformations.scale = scale;
 				transformations.rotation = rotation;
 
-				if (tile[c] == "Geo" || tile[c] == 1 || tile[c] == 3){
-					drawTexObj(gl, texProgram, cube, geoMaterial, transformations, viewProjMatrix, geoNormal);
-				}
-				if (tile[c] == "Tile" || tile[c] == 2){
-					drawTexObj(gl, texProgram, cube, tileMaterial, transformations, viewProjMatrix, tileNormal);
-				}
-				/*if ((tile[c] == "" || tile[c] == 0)){ //Painting
+				/*if (struc_t[c] == "Sphere"){
+					gl.uniform1i(texProgram.u_Reflect, 1);
+					
+					translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
+					scale = [.3*struc_s[c],.3*struc_s[c],.3*struc_s[c]];
+					
+					transformations.scale = scale;
+					transformations.translation = translation;
+					
+					drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+					gl.uniform1i(texProgram.u_Reflect, 0);
+				}*/
+				/*if (struc_t[c] == "Torus"){
+				
+					scale = [2.0*struc_s[c], 2.0*struc_s[c],  2.0*struc_s[c] ];
+					rotation =  [90.0+m.angle+c*90.0,.5,1.0,.5];
+					
+					transformations.translation = [ 
+						translation[0], 
+						translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, 
+						translation[2] ];
+					transformations.scale = scale;
+					transformations.rotation = rotation;
+
+					drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
+				} */
+				/*
+				if (struc_t[c] == "Cube"){
+				
+					translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
+					scale = [2*struc_s[c],2*struc_s[c],2*struc_s[c]];
+					
+					transformations.scale = scale;
+					transformations.translation = translation;
+
+					drawTexObj(gl, texProgram, cube,  woodMaterial, transformations, viewProjMatrix, woodNormal);
+				}*/
+				if (struc_t[c] == "Plane"){ //Painting
 				
 					scale = [ 1.0, 1.0, 1.0 ];
 					rotation =  [90.0, 1.0,0.0,0.0];
 					
 					transformations.translation = [ 
-						translation[0], 
-						1, 
-						translation[2]-2.8-8 ];
+						8.0*c, 
+						0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
+						-4.0 + c%3 * 60.0];
 					transformations.scale = scale;
 					transformations.rotation = rotation;
 
-					drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
-				
-				}*/
-				
-
-				c += 1;
+					if (c%2 == 1){
+						drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
+					}else{
+						drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
+					}
+				}
 			}
-		}
-		
-		gl.uniform1i(texProgram.u_Reflect, 0);
 		
 		}
-		
-		//Structures
-		if (true){
-		for (var c = 0; c < numStruc; c++){
+
+		//Brick Cube
+		if (false){
 			var transformations = {};
-			var translation = [ struc_x[c], struc_y[c], struc_z[c] ];
-			var scale = [8,8,8];
+			var translation = [0.0, -1.0, 0.0];
+			var scale = [1.1, 2.2, 1.1];
 			var rotation =  [0.0,0.0,1.0,0.0];
 
 			transformations.translation = translation;
 			transformations.scale = scale;
 			transformations.rotation = rotation;
 
-			/*if (struc_t[c] == "Sphere"){
-				gl.uniform1i(texProgram.u_Reflect, 1);
-				
-				translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
-				scale = [.3*struc_s[c],.3*struc_s[c],.3*struc_s[c]];
-				
-				transformations.scale = scale;
-				transformations.translation = translation;
-				
-				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
-				gl.uniform1i(texProgram.u_Reflect, 0);
-			}*/
-			if (struc_t[c] == "Torus"){
-			
-				scale = [2.0*struc_s[c], 2.0*struc_s[c],  2.0*struc_s[c] ];
-				rotation =  [90.0+m.angle+c*90.0,.5,1.0,.5];
-				
-				transformations.translation = [ 
-					translation[0], 
-					translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, 
-					translation[2] ];
-				transformations.scale = scale;
-				transformations.rotation = rotation;
-
-				drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
-			}
-			/*
-			if (struc_t[c] == "Cube"){
-			
-				translation = [ translation[0], translation[1] + Math.sin(m.angle*.05+c*.1)*1.5, translation[2] ];
-				scale = [2*struc_s[c],2*struc_s[c],2*struc_s[c]];
-				
-				transformations.scale = scale;
-				transformations.translation = translation;
-
-				drawTexObj(gl, texProgram, cube,  woodMaterial, transformations, viewProjMatrix, woodNormal);
-			}*/
-			if (struc_t[c] == "Plane"){ //Painting
-			
-				scale = [ 1.0, 1.0, 1.0 ];
-				rotation =  [90.0, 1.0,0.0,0.0];
-				
-				transformations.translation = [ 
-					8.0*c, 
-					0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
-					-4.0 ];
-				transformations.scale = scale;
-				transformations.rotation = rotation;
-
-				if (c%2 == 1){
-					drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
-				}else{
-					drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
-				}
-			}
-		}
-		
-		}
-
-		//Brick Cube
-		if (false){
-		var transformations = {};
-		var translation = [0.0, -1.0, 0.0];
-		var scale = [1.1, 2.2, 1.1];
-		var rotation =  [0.0,0.0,1.0,0.0];
-
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
-
-		drawTexObj(gl, texProgram, cube, solidGray, transformations, viewProjMatrix, torusNormalMap);
+			drawTexObj(gl, texProgram, cube, solidGray, transformations, viewProjMatrix, torusNormalMap);
 		}
 		
 		//Land / Plane
 		if (false){
 		
-		gl.uniform3f(texProgram.u_AmbientLight, 0.4,.4,.4);
-		gl.uniform1i(texProgram.u_Special, 2);
-		
-		for (var n = 0; n < 1; n++){
-			var transformations = {};
-			var translation = [-14*n,-2,5];
-			var scale = [1.5,1,1.5];
-			var rotation =  [0 ,1.0,0.0,0.0];
+			gl.uniform3f(texProgram.u_AmbientLight, 0.4,.4,.4);
+			gl.uniform1i(texProgram.u_Special, 2);
+			
+			for (var n = 0; n < 1; n++){
+				var transformations = {};
+				var translation = [-14*n,-2,5];
+				var scale = [1.5,1,1.5];
+				var rotation =  [0 ,1.0,0.0,0.0];
 
-			transformations.translation = translation;
-			transformations.scale = scale;
-			transformations.rotation = rotation;
+				transformations.translation = translation;
+				transformations.scale = scale;
+				transformations.rotation = rotation;
 
-			drawTexObj(gl, texProgram, land, grassMaterial, transformations, viewProjMatrix, plasterNormal);
-		}	
-		
-		gl.uniform3f(texProgram.u_AmbientLight, 0.1,.1,.1);
-		gl.uniform1i(texProgram.u_Special, 0);
+				drawTexObj(gl, texProgram, land, grassMaterial, transformations, viewProjMatrix, plasterNormal);
+			}	
+			
+			gl.uniform3f(texProgram.u_AmbientLight, 0.1,.1,.1);
+			gl.uniform1i(texProgram.u_Special, 0);
 		}
 
 		//Sphere for Light
@@ -1991,7 +1988,7 @@ function animate(angle, m, tile, height){
 	m.turn += x/5;
     //m.ly += y/10;
    	//Update looking direction
-    if (x != 0 || y != 0 || look == 1){
+    if (x != 0 || y != 0 || look == 1 || m.otherTurn == 1){
         m.lx = m.px + Math.cos(m.turn*3.14/180);
         m.lz = m.pz + Math.sin(m.turn*3.14/180);
         m.ly -= y/150;
@@ -2038,10 +2035,14 @@ function checkKey(e, m, type) {
       //m.clight = -1;
     }
     if ((e.keyCode == '39' || e.keyCode == '68')) {  // right
-      m.tright = type;
+      //m.tright = type;
+      m.turn+=5;
+      m.otherTurn = 1;
     }
     if ((e.keyCode == '37' || e.keyCode == '65')) { //left
-      m.tleft = type;
+      //m.tleft = type;
+      m.turn-=5;
+      m.otherTurn = 1;
     }
     if ((e.keyCode == '38' || e.keyCode == '87')) { //up
       m.moveup = type;

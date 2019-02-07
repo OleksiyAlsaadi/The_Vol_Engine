@@ -65,6 +65,45 @@ var TEXTURE_FSHADER_SOURCE =
   precision mediump float;
   #endif
 
+
+    vec3 permute(vec3 x){ 
+    	return mod(((x*34.0)+1.0)*x, 289.0); 
+    } 
+
+    vec3 taylorInvSqrt(vec3 r){ 
+    	return 1.79284291400159 - 0.85373472095314 * r; 
+    } 
+
+    float noise(vec2 P){ 
+    	const vec2 C = vec2(0.21132486540518713, 0.36602540378443859); 
+    	vec2 i = floor(P + dot(P, C.yy) ); 
+    	vec2 x0 = P - i + dot(i, C.xx); 
+    	vec2 i1; 
+    	i1.x = step( x0.y, x0.x ); 
+    	i1.y = 1.0 - i1.x; 
+    	vec4 x12 = x0.xyxy +  vec4( C.xx, C.xx * 2.0 - 1.0); 
+    	x12.xy -= i1; 
+    	i = mod(i, 289.0); 
+    	vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 )); 
+    	vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0); 
+    	m = m*m; 
+    	m = m*m; 
+    	vec3 x = fract(p*(1.0/41.0)) * 2.0 - 1.0; 
+    	vec3 gy = abs(x)-0.5; 
+    	vec3 ox = floor(x + 0.5); 
+    	vec3 gx = x - ox; 
+    	m *= taylorInvSqrt( gx*gx + gy*gy );
+    	vec3 g; 
+    	g.x = gx.x * x0.x + gy.x * x0.y; 
+    	g.yz = gx.yz * x12.xz + gy.yz * x12.yw; 
+    	return 130.0 * dot(m, g); 
+    } 
+
+    float turb(float cx, float cy){
+    	return .5 * noise(vec2(cx,cy)) + .25 * noise(vec2(2*cx,2*cy)) + .125 * noise(vec2(4*cx,4*cy)); 
+    } 
+
+
   //Texture
   uniform sampler2D u_Sampler;
   uniform sampler2D normalMap;
@@ -83,6 +122,10 @@ var TEXTURE_FSHADER_SOURCE =
   uniform int u_LightActive[nL];
 
   uniform vec3 u_AmbientLight;
+
+  uniform float u_WhichLightR;
+  uniform float u_WhichLightG;
+  uniform float u_WhichLightB;
 
   //Sunlight
   uniform vec3 u_DiffuseLight;
@@ -107,6 +150,7 @@ var TEXTURE_FSHADER_SOURCE =
   //Special
   uniform int u_Special;
   uniform int u_Reflect;
+  
 	 
 
 
@@ -133,7 +177,6 @@ var TEXTURE_FSHADER_SOURCE =
 		//return;
 	}
 
-
 	if (u_Reflect == 3){ //Reflect (half) and Material
 		color = (textureCube(u_Skybox, R)*.4) + texture2D(u_Sampler, v_TexCoord)*.6;
 	}
@@ -146,6 +189,12 @@ var TEXTURE_FSHADER_SOURCE =
 	if (u_Reflect == 2){ //Only Reflect
 		color = textureCube(u_Skybox, R);
 		gl_FragColor = color;
+		return;
+	}
+
+	if (u_Reflect == 5){ //Solid color
+		color = textureCube(u_Skybox, R);
+		gl_FragColor = color * vec4(u_WhichLightR, u_WhichLightG, u_WhichLightB, 1);
 		return;
 	}
 	
@@ -187,6 +236,7 @@ var TEXTURE_FSHADER_SOURCE =
 			added += vec3(diffuse[0]*dist, diffuse[1]*dist, diffuse[2]*dist);
 			//added += diffuse; //Without light intensity
 		}
+
 
         //Specular Lighting
 
@@ -288,6 +338,7 @@ function sleep(milliseconds) {
 
 var boxS;
 var show = 1;
+var portrait_rotate = 0;
 
 function main() {
 	// Retrieve <canvas> element
@@ -340,6 +391,11 @@ function main() {
 		texProgram.u_LightActive = gl.getUniformLocation(texProgram, "u_LightActive["+ n +"]");
 		gl.uniform1i(texProgram.u_LightActive, 0); 
 	}
+	texProgram.u_WhichLightR = gl.getUniformLocation(texProgram, "u_WhichLightR");
+	texProgram.u_WhichLightG = gl.getUniformLocation(texProgram, "u_WhichLightG");
+	texProgram.u_WhichLightB = gl.getUniformLocation(texProgram, "u_WhichLightB");
+
+
 
 	//Point light 1
 	texProgram.u_LightColor = gl.getUniformLocation(texProgram, 'u_LightColor');
@@ -533,14 +589,19 @@ function main() {
 
 	//Structures
 	if (true){
-		var numStruc = 7;
+		var numStruc = 8;
 		var struc_t = [];
 		var struc_x = [];
 		var struc_y = [];
 		var struc_z = [];
 		var struc_s = [];
+		var struc_rot = [];
+		var struc_plane_far = [];
 		for (var n = 0; n < numStruc; n++){
-			var r = Math.floor( Math.random() * 2 );
+			var r = Math.floor( Math.random() * 2);
+			var far = Math.floor( Math.random() * 2);
+			var turned = Math.floor( Math.random() * 2);
+
 			var type = "Plane"; //Default
 			if (r == 0){ type = "Plane"; } //Sphere
 			//if (r == 1){ type = "Torus"; }  //Torus
@@ -548,8 +609,10 @@ function main() {
 			struc_t.push(type);
 			struc_x.push( Math.random() * 50+10);
 			struc_y.push( Math.random() * 7 + 8);
-			struc_z.push( Math.random() * 50+10);
+			struc_z.push( Math.random() * 50+10 + 10.0);
 			struc_s.push( Math.random() * 1.5 + 1.0);
+			struc_rot.push(turned*90.0);
+			struc_plane_far.push(far);
 		}
 	}
 
@@ -576,7 +639,7 @@ function main() {
 		gl.uniform4fv(texProgram.u_Eye, eye);           // Eye point
 		gl.uniform4fv(texProgram.u_Eye2, eye);
 
-		viewMatrix.setPerspective(90.0, canvas.width/canvas.height, 0.1, 250.0);
+		viewMatrix.setPerspective(90.0, canvas.width/canvas.height, 0.1, 450.0);
 		projMatrix.setLookAt(m.px, m.py, m.pz ,   m.lx, m.ly, m.lz, 0.0, 1.0, 0.0);
 
 
@@ -586,6 +649,9 @@ function main() {
 
 		//Rocket Objects 
 		if (true){
+
+			gl.uniform1i(texProgram.u_Reflect, 5); //5 is just solid color
+
 			for (var n = 0; n < numLights; n++){
 
 				var pos = lightVector[n].get_Pos();
@@ -599,7 +665,11 @@ function main() {
 				transformations.rotation = rotation;
 
 				if (n > 0){
+					gl.uniform1f(texProgram.u_WhichLightR, lightVector[n].get_Color()[0]);
+					gl.uniform1f(texProgram.u_WhichLightG, lightVector[n].get_Color()[1]);
+					gl.uniform1f(texProgram.u_WhichLightB, lightVector[n].get_Color()[2]);
 					drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+					//gl.uniform1i(texProgram.u_WhichLight, );
 				}
 
 				//If hit an Enemy/ Enemy Collide
@@ -627,6 +697,8 @@ function main() {
 				}
 
 			}
+
+			gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 	
 		//Floor Tiles
@@ -754,14 +826,25 @@ function main() {
 					drawTexObj(gl, texProgram, cube,  woodMaterial, transformations, viewProjMatrix, woodNormal);
 				}*/
 				if (struc_t[c] == "Plane"){ //Painting
-				
+					if (struc_rot[c] == 0){
+						rotation =  [90.0, 1.0,0.0,0.0];
+						transformations.translation = [ 
+							8.0*c, 
+							0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
+							-4.0 + struc_plane_far[c]*60.0  ];
+					}else{
+
+						portrait_rotate = 1;
+						rotation =  [90.0, 1.0,0.0,0.0];
+						transformations.rotation = rotation;
+
+						transformations.translation = [ 
+							-4.0 + struc_plane_far[c]*60.0  , 
+							0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
+							8.0*c];
+					}
 					scale = [ 1.0, 1.0, 1.0 ];
-					rotation =  [90.0, 1.0,0.0,0.0];
-					
-					transformations.translation = [ 
-						8.0*c, 
-						0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
-						-4.0 + c%3 * 60.0];
+
 					transformations.scale = scale;
 					transformations.rotation = rotation;
 
@@ -770,6 +853,7 @@ function main() {
 					}else{
 						drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
 					}
+					portrait_rotate = 0;
 				}
 			}
 		
@@ -789,181 +873,183 @@ function main() {
 			drawTexObj(gl, texProgram, cube, solidGray, transformations, viewProjMatrix, torusNormalMap);
 		}
 		
-		//Land / Plane
-		if (false){
+		//Land / Plane / drawLand
+		if (true){
 		
 			gl.uniform3f(texProgram.u_AmbientLight, 0.4,.4,.4);
 			gl.uniform1i(texProgram.u_Special, 2);
+			gl.uniform1i(texProgram.u_Reflect, 3);
 			
-			for (var n = 0; n < 1; n++){
+			for (var n = 1; n < 2; n++){
 				var transformations = {};
-				var translation = [-14*n,-2,5];
-				var scale = [1.5,1,1.5];
+				var translation = [60*n,-3.1,60];
+				var scale = [153.5,1,153.5];
 				var rotation =  [0 ,1.0,0.0,0.0];
 
 				transformations.translation = translation;
 				transformations.scale = scale;
 				transformations.rotation = rotation;
-
-				drawTexObj(gl, texProgram, land, grassMaterial, transformations, viewProjMatrix, plasterNormal);
+												//grassMaterial                                 plasterNormal
+				drawTexObj(gl, texProgram, land, solidGray, transformations, viewProjMatrix, solidGrayNormal);
 			}	
 			
 			gl.uniform3f(texProgram.u_AmbientLight, 0.1,.1,.1);
 			gl.uniform1i(texProgram.u_Special, 0);
+			gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 
 		//Sphere for Light
 		if (false){
-		var transformations = {};
-		var translation = [ -0.4, 0.0, 2.0];
-		var scale = [0.05, 0.05, 0.05];
-		var rotation =  [0.0,0.0,1.0,0.0];
+			var transformations = {};
+			var translation = [ -0.4, 0.0, 2.0];
+			var scale = [0.05, 0.05, 0.05];
+			var rotation =  [0.0,0.0,1.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, blueMarbleNormal);
+			drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, blueMarbleNormal);
 		}
 
 		//Sphere for Light
 		if (false){
-		var transformations = {};
-		var translation = [0.4, 0.5, -2.3];
-		var scale = [0.05, 0.05, 0.05];
-		var rotation =  [0.0,0.0,1.0,0.0];
+			var transformations = {};
+			var translation = [0.4, 0.5, -2.3];
+			var scale = [0.05, 0.05, 0.05];
+			var rotation =  [0.0,0.0,1.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, solidGrayNormal);
+			drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, solidGrayNormal);
 		}
 
 		//Sphere Big
 		if (false){
-		gl.uniform1i(texProgram.u_Reflect, 1);
-		
-		var transformations = {};
-		var translation = [0.0, -1.0, -3.5];
-		var scale = [.4, .4, .4];
-		var rotation =  [m.angle*.2,0.0,1.0,0.0];
+			gl.uniform1i(texProgram.u_Reflect, 1);
+			
+			var transformations = {};
+			var translation = [0.0, -1.0, -3.5];
+			var scale = [.4, .4, .4];
+			var rotation =  [m.angle*.2,0.0,1.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
+			drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
 
-		gl.uniform1i(texProgram.u_Reflect, 0);
+			gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 
 		//Sphere Medium Rotating
 		if (false){
-		gl.uniform1i(texProgram.u_Reflect, 1);
-		
-		var transformations = {};
-		var translation = [Math.sin(m.angle/60)*5, -1.0, Math.cos(m.angle/60)*5];
-		var scale = [.2, .2, .2];
-		var rotation =  [0.0,1.0,0.0,0.0];
+			gl.uniform1i(texProgram.u_Reflect, 1);
+			
+			var transformations = {};
+			var translation = [Math.sin(m.angle/60)*5, -1.0, Math.cos(m.angle/60)*5];
+			var scale = [.2, .2, .2];
+			var rotation =  [0.0,1.0,0.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, sphereNormalMap);
+			drawTexObj(gl, texProgram, sphere, solidGray, transformations, viewProjMatrix, sphereNormalMap);
 
-		gl.uniform1i(texProgram.u_Reflect, 0);
+			gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 
 		//Torus	
 		if (false){
-		var transformations = {};
-		var translation = [-0.0,1.0,0];
-		var scale = [1.0, 1.0, 1.0];
-		var rotation =  [0.0,1.0,0.0,0.0];
+			var transformations = {};
+			var translation = [-0.0,1.0,0];
+			var scale = [1.0, 1.0, 1.0];
+			var rotation =  [0.0,1.0,0.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
+			drawTexObj(gl, texProgram, torus, torusMaterial, transformations, viewProjMatrix, torusNormalMap);
 		}
 
 		//Enemy Objects
 		if (true){
-		gl.uniform1i(texProgram.u_Reflect, 2);
-		
-		for (var n = 0; n < Object.keys(id_s).length; n++){
-			key = Object.keys(id_s)[n];
-			if ((id_s[key] != my_id || false) && active_id[key] == true){ // true to show player too
+			gl.uniform1i(texProgram.u_Reflect, 2);
+			
+			for (var n = 0; n < Object.keys(id_s).length; n++){
+				key = Object.keys(id_s)[n];
+				if ((id_s[key] != my_id || false) && active_id[key] == true){ // true to show player too
 
-				var xx = parseFloat(ps_x[key]);
-				var yy = parseFloat(ps_y[key]);
-				var zz = parseFloat(ps_z[key]);
+					var xx = parseFloat(ps_x[key]);
+					var yy = parseFloat(ps_y[key]);
+					var zz = parseFloat(ps_z[key]);
 
-				//Move to goto position fluently
-				var dx = xx - goto_x[key];
-				var dy = yy - goto_y[key];
-				var dz = zz - goto_z[key];
-				
+					//Move to goto position fluently
+					var dx = xx - goto_x[key];
+					var dy = yy - goto_y[key];
+					var dz = zz - goto_z[key];
+					
 
-				if (delta_x[key] != 0.0 || delta_y[key] != 0.0 || delta_z[key] != 0.0){
-					ps_x[key] += delta_x[key];
-					ps_y[key] -= delta_y[key];
-					ps_z[key] += delta_z[key];
-					if (delta_y[key] != 0.0){
-						delta_y[key] += .01;
-						//console.log(delta_y[key]);
+					if (delta_x[key] != 0.0 || delta_y[key] != 0.0 || delta_z[key] != 0.0){
+						ps_x[key] += delta_x[key];
+						ps_y[key] -= delta_y[key];
+						ps_z[key] += delta_z[key];
+						if (delta_y[key] != 0.0){
+							delta_y[key] += .01;
+							//console.log(delta_y[key]);
+						}
+					}else{
+						ps_x[key] -= dx * .05;
+						ps_y[key] -= dy * .05;
+						ps_z[key] -= dz * .05;
 					}
-				}else{
-					ps_x[key] -= dx * .05;
-					ps_y[key] -= dy * .05;
-					ps_z[key] -= dz * .05;
+
+
+					//Handle transformations
+					var transformations = {};
+					var translation = [xx, yy, zz];
+					var scale = [.4, .4, .4];
+					var rotation =  [m.angle*.2,0.0,1.0,0.0];
+
+					transformations.translation = translation;
+					transformations.scale = scale;
+					transformations.rotation = rotation;
+
+					drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
 				}
-
-
-				//Handle transformations
-				var transformations = {};
-				var translation = [xx, yy, zz];
-				var scale = [.4, .4, .4];
-				var rotation =  [m.angle*.2,0.0,1.0,0.0];
-
-				transformations.translation = translation;
-				transformations.scale = scale;
-				transformations.rotation = rotation;
-
-				drawTexObj(gl, texProgram, sphere, concreteMaterial, transformations, viewProjMatrix, blueMarbleNormal);
 			}
-		}
 
-		gl.uniform1i(texProgram.u_Reflect, 0);
+			gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 
 		//Skybox
 		if (true){
-		var transformations = {};
-		var translation = [m.px, m.py, m.pz];
-		var scale = [35,35,35];
-		var rotation =  [0.0,1.0,0.0,0.0];
+			var transformations = {};
+			var translation = [m.px, m.py, m.pz];
+			var scale = [35,35,35];
+			var rotation =  [0.0,1.0,0.0,0.0];
 
-		transformations.translation = translation;
-		transformations.scale = scale;
-		transformations.rotation = rotation;
+			transformations.translation = translation;
+			transformations.scale = scale;
+			transformations.rotation = rotation;
 
-		//is_Sky = 1;
-		gl.uniform1i(texProgram.u_Special, 1);
+			//is_Sky = 1;
+			gl.uniform1i(texProgram.u_Special, 1);
 
-		var scale = [20,21,21];
-		if (m.day == 0){
-			drawTexObj(gl, texProgram, skyBox, skyTex, transformations, viewProjMatrix, solidGrayNormal);
-		}
-		if (m.day == 1){
-			drawTexObj(gl, texProgram, skyBox, skyTex2, transformations, viewProjMatrix, solidGrayNormal);
-		}
+			var scale = [20,21,21];
+			if (m.day == 0){
+				drawTexObj(gl, texProgram, skyBox, skyTex, transformations, viewProjMatrix, solidGrayNormal);
+			}
+			if (m.day == 1){
+				drawTexObj(gl, texProgram, skyBox, skyTex2, transformations, viewProjMatrix, solidGrayNormal);
+			}
 
-		gl.uniform1i(texProgram.u_Special, 0);
-		//is_Sky = 0;
+			gl.uniform1i(texProgram.u_Special, 0);
+			//is_Sky = 0;
 		}
 
 
@@ -1301,8 +1387,8 @@ function initPlane(gl, myModel){
   var i = [];
   var tex = 1;
   var c = 0;
-  for (var y = 0; y < 10; y++){
-	for (var x = 0; x < 10; x++){
+  for (var y = 0; y < 5; y++){
+	for (var x = 0; x < 5; x++){
 		v = v.concat([2+x*4, 0, 2+y*4,   -2+x*4, 0, 2+y*4,    -2+x*4, 0, -2+y*4,   2+x*4, 0, -2+y*4]);
 		n = n.concat([0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0]); // v0-v1-v2-v3 front
 		t = t.concat([tex, tex,    0.0, tex,     0.0, 0.0,   tex, 0.0]); // v0-v1-v2-v3 front
@@ -1730,6 +1816,12 @@ function drawCube(gl, program, o, transformations, viewProjMatrix) {
         transformations.rotation[3]);
     g_modelMatrix.rotate(
         180,0,1,0);
+
+    if (portrait_rotate == 1){
+	    g_modelMatrix.rotate(
+	        90,0,0,1);	
+    }
+
     g_modelMatrix.translate(0, -1 * (transformations.translation[1]/2 + 1), 0);
     g_modelMatrix.scale(transformations.scale[0], transformations.scale[1], transformations.scale[2]);
 

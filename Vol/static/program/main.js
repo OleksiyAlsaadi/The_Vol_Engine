@@ -223,9 +223,10 @@ var TEXTURE_FSHADER_SOURCE =
 		//float m = sin(u_Time*.05 + turb( cx,cy ) ) ;
 		//float m = (1 + sin((cx + sin(u_Time*.05) * noise(cx,cy) / 2) * 50))/2; 
 
-		float m = (1.0 + sin(( sin(u_Time*.0125) * turb(cx,cy*5.0) *.5) * 50.0))*.5;
+		float m = (1.0 + sin(( sin(u_Time*.0125)*.7 * turb(cx,cy*5.0) *.5) * 50.0))*.5;
 
-		color = textureCube(u_Skybox, R);
+		vec3 R2 = reflect(I, testNormal*(m*.1+1.0));
+		color = textureCube(u_Skybox, R2);
 
 		gl_FragColor = color * vec4(
 			m*.2+.7, 
@@ -926,15 +927,18 @@ function main() {
 			
 			for (var n = 1; n < 2; n++){
 				var transformations = {};
-				var translation = [60*n,-3.1,60];
+				var translation = [60*n,-3-8.1,60];
 				var scale = [103.5,1,103.5];
 				var rotation =  [0 ,1.0,0.0,0.0];
 
 				transformations.translation = translation;
 				transformations.scale = scale;
 				transformations.rotation = rotation;
-												//grassMaterial                                 plasterNormal
-				drawTexObj(gl, texProgram, land, solidGray, transformations, viewProjMatrix, solidGrayNormal);
+			    								//grassMaterial                                 plasterNormal
+				//for(var i = -1; i < 2; i++){
+					//transformations.translation = [60*n + i*120,-3-8.1,60];
+					drawTexObj(gl, texProgram, land, solidGray, transformations, viewProjMatrix, solidGrayNormal);
+				//}
 			}	
 			
 			gl.uniform3f(texProgram.u_AmbientLight, 0.1,.1,.1);
@@ -1075,7 +1079,7 @@ function main() {
 		if (true){
 			var transformations = {};
 			var translation = [m.px, m.py, m.pz];
-			var scale = [35,35,35];
+			var scale = [100,100,100];
 			var rotation =  [0.0,1.0,0.0,0.0];
 
 			transformations.translation = translation;

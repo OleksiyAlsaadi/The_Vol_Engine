@@ -19,6 +19,7 @@ var TEXTURE_VSHADER_SOURCE =
   uniform mat4 u_ProjMatrix;
   uniform mat4 u_NormalMatrix;
 
+  //Varying
   varying vec2 v_TexCoord;
 
   varying vec3 v_Normal;
@@ -31,6 +32,10 @@ var TEXTURE_VSHADER_SOURCE =
   varying vec3 viewPos;
 
   varying vec4 rPosition;
+
+  //Special
+  uniform float u_Time2;
+  uniform int u_Special2;
 
   //Fog
   uniform vec4 u_Eye;
@@ -45,6 +50,10 @@ var TEXTURE_VSHADER_SOURCE =
     v_TexCoord = a_TexCoord;
     v_Position = vec3(u_ModelMatrix * a_Position);
     v_Color = a_Color;
+
+    if (u_Special2 == 1){ //Water
+    	gl_Position.y += sin(u_Time2*.05 + v_TexCoord.x*1.0)*.5-.5;
+	}
 
     vec3 T = normalize( vec3(u_ModelMatrix * vec4(a_Tangent, 0.0)).xyz);
     vec3 B = normalize( vec3(u_ModelMatrix * vec4(a_BiTangent, 0.0)));
@@ -74,7 +83,8 @@ var TEXTURE_FSHADER_SOURCE =
     	return 1.79284291400159 - 0.85373472095314 * r; 
     } 
 
-    float noise(vec2 P){ 
+    float noise(float P1, float P2){ 
+    	vec2 P = vec2(P1, P2);
     	const vec2 C = vec2(0.21132486540518713, 0.36602540378443859); 
     	vec2 i = floor(P + dot(P, C.yy) ); 
     	vec2 x0 = P - i + dot(i, C.xx); 
@@ -90,17 +100,17 @@ var TEXTURE_FSHADER_SOURCE =
     	m = m*m; 
     	vec3 x = fract(p*(1.0/41.0)) * 2.0 - 1.0; 
     	vec3 gy = abs(x)-0.5; 
-    	vec3 ox = floor(x + 0.5); 
-    	vec3 gx = x - ox; 
+    	vec3 ox = floor(x + 0.5);
+    	vec3 gx = x - ox;
     	m *= taylorInvSqrt( gx*gx + gy*gy );
     	vec3 g; 
     	g.x = gx.x * x0.x + gy.x * x0.y; 
     	g.yz = gx.yz * x12.xz + gy.yz * x12.yw; 
-    	return 130.0 * dot(m, g); 
+    	return 130.0 * dot(m, g);   
     } 
 
     float turb(float cx, float cy){
-    	return .5 * noise(vec2(cx,cy)) + .25 * noise(vec2(2*cx,2*cy)) + .125 * noise(vec2(4*cx,4*cy)); 
+    	return .5 * noise(cx, cy) + .25 * noise(2.0*cx,2.0*cy) + .125 * noise(4.0*cx,4.0*cy); 
     } 
 
 
@@ -150,6 +160,7 @@ var TEXTURE_FSHADER_SOURCE =
   //Special
   uniform int u_Special;
   uniform int u_Reflect;
+  uniform float u_Time;
   
 	 
 
@@ -200,6 +211,27 @@ var TEXTURE_FSHADER_SOURCE =
 	
 	if (u_Special == 1){ //Early Exit (ex: Skybox)
 		gl_FragColor = color;
+		return;
+	}
+
+	if (u_Special == 3){ //Water Procedural Texture
+		float cx = v_TexCoord.x+u_Time*.0025;
+		float cy = v_TexCoord.y;//+u_Time*.001;
+
+		//float m = (1.0 + sin((cx + turb(cx,cy) * .1) * 25.0)) * .5; 
+		//float m = (1.0 + sin((turb(10.0*cx,10.0*cy) / 2.0) * 50.0))/2.0; 
+		//float m = sin(u_Time*.05 + turb( cx,cy ) ) ;
+		//float m = (1 + sin((cx + sin(u_Time*.05) * noise(cx,cy) / 2) * 50))/2; 
+
+		float m = (1.0 + sin(( sin(u_Time*.0125) * turb(cx,cy*5.0) *.5) * 50.0))*.5;
+
+		color = textureCube(u_Skybox, R);
+
+		gl_FragColor = color * vec4(
+			m*.2+.7, 
+			m*.2+.7, 
+			.9, 
+			.8);
 		return;
 	}
 
@@ -412,9 +444,14 @@ function main() {
 	//Special 
 	texProgram.u_Special = gl.getUniformLocation(texProgram, 'u_Special');
 	gl.uniform1i(texProgram.u_Special, 0);
+	texProgram.u_Special2 = gl.getUniformLocation(texProgram, 'u_Special2');
+	gl.uniform1i(texProgram.u_Special2, 0);
 	texProgram.u_Reflect = gl.getUniformLocation(texProgram, 'u_Reflect');
 	gl.uniform1i(texProgram.u_Reflect, 0);
-	
+	texProgram.u_Time = gl.getUniformLocation(texProgram, 'u_Time');
+	gl.uniform1i(texProgram.u_Time, 0.0);	
+	texProgram.u_Time2 = gl.getUniformLocation(texProgram, 'u_Time2');
+	gl.uniform1i(texProgram.u_Time2, 0.0);	
 
     
 	// Color of Fog
@@ -616,7 +653,8 @@ function main() {
 		}
 	}
 
-	
+
+	var time_for_u = 0.0;	
 	
 	var tick = function() {
 		//console.log("test3");
@@ -626,6 +664,10 @@ function main() {
 			updateBackend = 0;
 			socket.onopen();
 		}
+
+		time_for_u += 1;
+		gl.uniform1f(texProgram.u_Time, time_for_u);
+		gl.uniform1f(texProgram.u_Time2, time_for_u);
 
 
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT); // Clear color and depth buffers
@@ -833,7 +875,7 @@ function main() {
 							0.0 + Math.sin(m.angle*.02+c*.4)*.5, 
 							-4.0 + struc_plane_far[c]*60.0  ];
 					}else{
-
+						gl.uniform3f(texProgram.u_AmbientLight, 0.5,.5,.5);
 						portrait_rotate = 1;
 						rotation =  [90.0, 1.0,0.0,0.0];
 						transformations.rotation = rotation;
@@ -854,6 +896,7 @@ function main() {
 						drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
 					}
 					portrait_rotate = 0;
+					//gl.uniform3f(texProgram.u_AmbientLight, .1,0,0);
 				}
 			}
 		
@@ -873,17 +916,18 @@ function main() {
 			drawTexObj(gl, texProgram, cube, solidGray, transformations, viewProjMatrix, torusNormalMap);
 		}
 		
-		//Land / Plane / drawLand
+		//Land / Plane / drawLand / Water
 		if (true){
 		
-			gl.uniform3f(texProgram.u_AmbientLight, 0.4,.4,.4);
-			gl.uniform1i(texProgram.u_Special, 2);
-			gl.uniform1i(texProgram.u_Reflect, 3);
+			gl.uniform3f(texProgram.u_AmbientLight, 0.9,.9,.9);
+			gl.uniform1i(texProgram.u_Special, 3);
+			gl.uniform1i(texProgram.u_Special2, 1);
+			//gl.uniform1i(texProgram.u_Reflect, 2);
 			
 			for (var n = 1; n < 2; n++){
 				var transformations = {};
 				var translation = [60*n,-3.1,60];
-				var scale = [153.5,1,153.5];
+				var scale = [103.5,1,103.5];
 				var rotation =  [0 ,1.0,0.0,0.0];
 
 				transformations.translation = translation;
@@ -895,7 +939,8 @@ function main() {
 			
 			gl.uniform3f(texProgram.u_AmbientLight, 0.1,.1,.1);
 			gl.uniform1i(texProgram.u_Special, 0);
-			gl.uniform1i(texProgram.u_Reflect, 0);
+			gl.uniform1i(texProgram.u_Special2, 0);
+			//gl.uniform1i(texProgram.u_Reflect, 0);
 		}
 
 		//Sphere for Light
@@ -1387,8 +1432,8 @@ function initPlane(gl, myModel){
   var i = [];
   var tex = 1;
   var c = 0;
-  for (var y = 0; y < 5; y++){
-	for (var x = 0; x < 5; x++){
+  for (var y = 0; y < 10; y++){
+	for (var x = 0; x < 10; x++){
 		v = v.concat([2+x*4, 0, 2+y*4,   -2+x*4, 0, 2+y*4,    -2+x*4, 0, -2+y*4,   2+x*4, 0, -2+y*4]);
 		n = n.concat([0, 1, 0,   0, 1, 0,   0, 1, 0,   0, 1, 0]); // v0-v1-v2-v3 front
 		t = t.concat([tex, tex,    0.0, tex,     0.0, 0.0,   tex, 0.0]); // v0-v1-v2-v3 front

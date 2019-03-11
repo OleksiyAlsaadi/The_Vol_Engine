@@ -532,6 +532,9 @@ function main() {
 
 	var old_trinity = initTextures(gl, texProgram, './static/program/Textures/Misc/old_trinity.png', 0);
 	var shia = initTextures(gl, texProgram, './static/program/Textures/Misc/shia.png', 0);
+	var george = initTextures(gl, texProgram, './static/program/Textures/Misc/george.png', 0);
+	var ascent = initTextures(gl, texProgram, './static/program/Textures/Misc/ascent.png', 0);
+
 	skyBox = initCube(gl, myCube);
 	land = initPlane(gl, myTorus);
 	planeObj = initPlaneSingle(gl, myTorus);
@@ -627,7 +630,7 @@ function main() {
 
 	//Structures
 	if (true){
-		var numStruc = 8;
+		var numStruc = 10;
 		var struc_t = [];
 		var struc_x = [];
 		var struc_y = [];
@@ -891,10 +894,15 @@ function main() {
 					transformations.scale = scale;
 					transformations.rotation = rotation;
 
-					if (c%2 == 1){
+					if (c%4 == 1){
 						drawTexObj(gl, texProgram, planeObj,  old_trinity, transformations, viewProjMatrix, torusNormalMap);
-					}else{
+					}else if (c%4 == 2){
 						drawTexObj(gl, texProgram, planeObj,  shia, transformations, viewProjMatrix, plasterNormal);
+					}else if (c%4 == 3){
+						drawTexObj(gl, texProgram, planeObj,  george, transformations, viewProjMatrix, torusNormalMap);						
+					}else{
+						drawTexObj(gl, texProgram, planeObj,  ascent, transformations, viewProjMatrix, torusNormalMap);						
+
 					}
 					portrait_rotate = 0;
 					//gl.uniform3f(texProgram.u_AmbientLight, .1,0,0);
@@ -2216,7 +2224,7 @@ function checkKey(e, m, type) {
     if (e.keyCode == '69' && type == 5 && fireDelay <= 0 && spawning == 0){
       rocketLaunch = 1;
       updateBackend = 1;
-      fireDelay = 5;
+      fireDelay = 25;
     }
 
     

@@ -2184,13 +2184,13 @@ function checkKey(e, m, type) {
       //m.clight = -1;
     }
     if ((e.keyCode == '39' || e.keyCode == '68')) {  // right
-      //m.tright = type;
-      m.turn+=5;
+      m.tright = type;
+      //m.turn+=5;
       m.otherTurn = 1;
     }
     if ((e.keyCode == '37' || e.keyCode == '65')) { //left
-      //m.tleft = type;
-      m.turn-=5;
+      m.tleft = type;
+      //m.turn-=5;
       m.otherTurn = 1;
     }
     if ((e.keyCode == '38' || e.keyCode == '87')) { //up

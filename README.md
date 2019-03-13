@@ -8,8 +8,8 @@ Use Firefox to prevent lag. Chrome and Opera do not run well with WebGL and I ha
 Arrow keys to move, 'E' to shoot, 'Space' to jump. Give it some time to load.
 
 
-<img src="/Screenshots/yellow.png" width="50%">
+<img src="/Screenshots/yellow.png" width="70%">
 
-<img src="/Screenshots/green.png" width="50%">
+<img src="/Screenshots/green.png" width="70%">
 
-<img src="/Screenshots/far.png" width="50%">
+<img src="/Screenshots/far.png" width="70%">

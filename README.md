@@ -1,4 +1,4 @@
-# WebGL Django Channels
+# WebGL Django Channels - The Vol Engine
 
 Multi-player First Person Shooter! Created using Django Channels with WebGL.
 As many players can join into the same session as the server will allow. Dodge bullets and be prepared for the map to shift at a moment's notice. Django supplies the backend while Javascript (WebGL) handles the rasterized 3D graphics.
